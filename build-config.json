@@ -1,0 +1,20 @@
+{
+    "osm": [
+        {
+        "source" : "file:///var/opentripplanner/data/osm/estonia.pbf"
+        }
+      
+    ],
+  "transitFeeds": [
+    {
+      "type": "gtfs",
+      "feedId" : "ES",
+      "source": "file:///opt/otp-data/transit/napcorexgtfs.zip"
+    },
+        {
+      "type": "netex",
+      "feedId" : "FI",
+      "source": "file:///opt/otp-data/transit/Napcorex.zip"
+    }
+  ]
+}
