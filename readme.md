@@ -1,57 +1,160 @@
-## Set Up
+# Set Up
 
-Opentripplanner jar-file: https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/
+### Opentripplanner jar-file:
 
-Jar-tiedosto lis�t��n projektin kantaan jonka j�lkeen opentripplanner k�ynnistet��n alla olevilla komennoilla.
+OpenTripPlanner jar-file: [OTP-jar](https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/)
 
-### OpenTripPlanner / Terminaalista ajo
+Jar-tiedosto lisätään projektin kantaan jonka jälkeen opentripplanner käynnistetään alla olevilla komennoilla.
 
-OTP docs: https://docs.opentripplanner.org/en/latest/Basic-Tutorial/
+## OpenTripPlanner / Terminaalista ajo
 
-simple-step-server:
+OTP docs: [OpenTripPlanner](https://docs.opentripplanner.org/en/latest/Basic-Tutorial/)
 
-'$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --serve .'
-http://localhost:8080/
+### simple-step-server:
 
-Graafin tallennus ja valmiista graafista k�ynnistys:
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --serve .'
 
-Graafin tallennus:
-'$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --save .'
+serveri aukeaa: http://localhost:8080/
 
-Valmiista graafista k�ynnistys:
-'$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
+### Graafin tallennus ja valmiista graafista käynnistys:
 
-### NeTEx
+#### Graafin tallennus:
 
-NeTEx data tools: https://data4pt.org/w/index.php/NeTEX
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --save .'
 
-### OSM
+#### Valmiista graafista käynnistys:
 
-OSM: https://www.openstreetmap.org/#map=8/59.115/25.009&layers=D
---> Yl�kulman "navigointi -> export" saa ladattua alueen. T�m� vain pienille alueille (yksitt�iset kaupungit)
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
 
-Suuremmat alueet: https://download.geofabrik.de/europe.html
-Geofabrikista voi ladata suuremman alueen (esim. Viro) ja t�t� aluetta voidaan konvertoida pienemm�ksi osmconvert toolilla.
+## NeTEx
 
-osmconvert:
-'sudo apt install osmctools'
-'osmconvert <originalOSM.osm.pbf> -b=<Bounding tool coordinates> --complete-ways -o=<konvertoituOSM>.pbf'
+NeTEx data tools: [Netex](https://data4pt.org/w/index.php/NeTEX)
 
-OSM Bounding tool: https://boundingbox.klokantech.com/
-Vasemmalta alakulmasta CSV-formaatti tarjoaa valmiiksi oikean muodon osmconvert komennossa k�ytett�v�lle parametrille.
+## GTFS
 
-### Data
+GTFS data visualization tool: [GTFS](https://app.transit-lens.com/)
 
-Data on t�ll� hetkell� jaettu GTFS, OSM ja NeTEx kansioihin, joista Build-config.json tiedostossa m��ritell��n datojen sijainti. T�ss� on ehk� mahdollisuus k�ytt�� Jaakon tarjoamia https linkkej� datan saavuttamiseen. Nyt Zip paketit ladattuna ja sijoitettuna aiemmin mainittuihin kansioihin.
+## OSM
 
-### DOCKER
+#### OSM:
 
-Build image Dockerfilen pohjalta:
+OpenStreetMap: [OSM](https://www.openstreetmap.org/#map=8/59.115/25.009&layers=D)
+--> Yläkulman "navigointi -> export" saa ladattua alueen. Tämä vain pienille alueille (yksittäiset kaupungit)
 
-podman build -t my-otp .
+Suuremmat alueet: [Suuret OSM](https://download.geofabrik.de/europe.html)
+Geofabrikista voi ladata suuremman alueen (esim. Viro) ja tätä aluetta voidaan konvertoida pienemmäksi osmconvert toolilla.
 
-Kontin k�ynnistys
-podman run -d --name my-otp-container -p 8080:8080 localhost/my-otp
+#### osmconvert:
 
-Kontin bash:
-podman exec -it my-otp-container /bin/bash
+> 'sudo apt install osmctools'
+> 'osmconvert <originalOSM.osm.pbf> -b=<Bounding tool coordinates> --complete-ways -o=<konvertoituOSM>.pbf'
+
+#### OSM Bounding tool:
+
+OSM rajaustyökalu: [Bounding tool](https://boundingbox.klokantech.com/)
+
+Vasemmalta alakulmasta CSV-formaatti tarjoaa valmiiksi oikean muodon osmconvert komennossa käytettävälle parametrille.
+
+# Data
+
+Käytetään Jaakon tarjoamia URL-linkkejä datan saavuttamiseksi. Kontti noutaa tällä hetkellä datan ja tallentaa sen kontin sisälle. Build-config.json on määritelty keräämään data kontin sisältä (Dockerfile).
+
+Zip paketit ovat olleet ladattuna ja sijoitettuna lokaaliin ympäristöön GTFS, OSM ja NeTEx kansioihin testausta varten
+
+# DOCKER
+
+### Build image Dockerfilen pohjalta:
+
+> podman build -t my-otp .
+
+### Kontin käynnistys
+
+> podman run -d --name my-otp-container -p 8080:8080 localhost/my-otp
+
+### Kontin bash:
+
+> podman exec -it my-otp-container /bin/bash
+
+# Mahdollisia Azure ratkaisuja
+
+### Azure container service
+
+Tässä mallissa OTP ajetaan Azure Container Instances -palvelussa.
+Dataesikäsittely, graafin rakentaminen ja itse OTP-palvelu voidaan toteuttaa erillisinä kontteina.
+Kaikki pysyvä data säilytetään Azure Filesissa.
+
+GTFS / OSM Sources
+│
+▼
+Preprocessing Container
+│
+▼
+Azure Files
+│
+▼
+Build Container
+│
+▼
+Azure Files
+│
+▼
+OTP Serve Container
+│
+▼
+Users
+
+### Haitat
+
+ACI ei tarjoa valmiina:
+
+- autoskaalausta
+- deployment sloteja
+- load balancingia
+- custom domain -hallintaa
+
+Nämä täytyy toteuttaa erikseen esimerkiksi:
+
+- Azure Front Door
+- Application Gateway
+- Azure DNS
+
+### Suositeltu käyttötapa
+
+#### Soveltuu tilanteisiin joissa:
+
+- käyttäjämäärä on pieni tai keskisuuri
+- kustannukset halutaan minimoida
+- graphien rakentaminen on merkittävä osa järjestelmää
+- infrastruktuurin halutaan olevan mahdollisimman yksinkertainen
+
+### Azure app services
+
+Suositellaan jatkuasti käynnissä oleville web-palveluille
+
+Tässä mallissa OpenTripPlanner (OTP) toimii jatkuvasti käynnissä olevana web-palveluna Azure App Servicessä. Reititysgraafin (graph.obj) rakentaminen on erotettu omaksi pipeline-vaiheekseen.
+
+OTP-kontin vastuulla on ainoastaan valmiin graafin lataaminen ja API/UI:n tarjoaminen käyttäjille.
+
+Azure files prosessoitujen tiedostojen tallentamiseen: [Azure files](https://learn.microsoft.com/en-us/azure/storage/files/storage-files-introduction)
+
+GTFS / OSM Sources
+│
+▼
+Build Pipeline
+│
+├─ Download data
+├─ Preprocess data
+├─ Build graph.obj
+│
+▼
+Azure Files
+│
+▼
+Azure App Service
+
+##### Soveltuu tilanteisiin joissa:
+
+- OTP on jatkuvasti käytössä
+- käyttäjiä on paljon
+- palvelun saatavuus on tärkeää
+- halutaan minimoida ylläpitotyö
