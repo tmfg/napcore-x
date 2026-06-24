@@ -27,10 +27,10 @@ COPY ./osm/ /var/opentripplanner/data/osm
 
 RUN mkdir -p /opt/otp-data/transit /opt/otp-data/osm && \
     curl --cacert /tmp/zscalerrootca.pem -L \
-      "https://mobility.mobility-database.fintraffic.fi/static/napcorexgtfs.zip" \
+      "<gtfs.zip>" \
       -o /opt/otp-data/transit/napcorexgtfs.zip && \
     curl --cacert /tmp/zscalerrootca.pem -L \
-      "https://mobility.mobility-database.fintraffic.fi/static/Napcorex.zip" \
+      "<netex.zip>" \
       -o /opt/otp-data/transit/Napcorex.zip
 
 # Build the graph when the container starts
