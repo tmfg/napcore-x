@@ -75,6 +75,64 @@ Zip paketit ovat olleet ladattuna ja sijoitettuna lokaaliin ympäristöön GTFS,
 
 > podman exec -it my-otp-container /bin/bash
 
+# Local testing (build + serve images)
+
+These commands test the split build/serve container workflow locally. Replace
+the placeholder file names below with your own downloaded files (see the "Data
+packages" section above for the actual source URLs).
+
+### Create local folders
+
+> mkdir -p local-test/input/osm local-test/input/transit local-test/output/graph
+
+### Download test data
+
+> curl -L "\<osm-extract-url\>" -o local-test/input/osm/\<osm-extract\>.pbf
+>
+> curl -L "\<gtfs-feed-url\>" -o local-test/input/transit/\<gtfs-feed\>.zip
+>
+> curl -L "\<netex-feed-url\>" -o local-test/input/transit/\<netex-feed\>.zip
+
+### Build the builder image
+
+> podman build -f src/build/Dockerfile -t otp-build .
+
+### Run the builder image with GTFS + NeTEx
+
+> podman run --rm \\
+> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
+>  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
+> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
+> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
+> -e INPUT_NETEX_PATH=/mnt/input/transit/\<netex-feed\>.zip \\
+> -e OUTPUT_GRAPH_DIR=/mnt/output \\
+> otp-build
+
+### Run the builder image with a single feed only
+
+INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
+
+> podman run --rm \\
+> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
+>  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
+> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
+> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
+> -e OUTPUT_GRAPH_DIR=/mnt/output \\
+> otp-build
+
+### Build the serve image
+
+> podman build -f src/serve/Dockerfile -t otp-serve .
+
+### Run the serve image against the built graph
+
+> podman run --rm -p 8080:8080 \\
+> -v "$(pwd)/local-test/output/graph:/mnt/graph:ro" \\
+> -e OTP_GRAPH_DIR=/mnt/graph \\
+> otp-serve
+
+Open http://localhost:8080/ once the server has started.
+
 # Mahdollisia Azure ratkaisuja
 
 ### Azure container service
