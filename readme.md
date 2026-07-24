@@ -61,25 +61,18 @@ Käytetään Jaakon tarjoamia URL-linkkejä datan saavuttamiseksi. Kontti noutaa
 
 Zip paketit ovat olleet ladattuna ja sijoitettuna lokaaliin ympäristöön GTFS, OSM ja NeTEx kansioihin testausta varten
 
-# DOCKER
+# Containers
 
-### Build image Dockerfilen pohjalta:
+There are two container images: builder and server (TODO: clarify naming).
 
-> podman build -t my-otp .
-
-### Kontin käynnistys
-
-> podman run -d --name my-otp-container -p 8080:8080 localhost/my-otp
-
-### Kontin bash:
-
-> podman exec -it my-otp-container /bin/bash
+The builder image will build the OTP graph, and server will use the graph to serve OTP and UI.
 
 # Local testing (build + serve images)
 
 These commands test the split build/serve container workflow locally. Replace
-the placeholder file names below with your own downloaded files (see the "Data
-packages" section above for the actual source URLs).
+the placeholder file names below with your own downloaded files.
+
+Data files for local testing will be located in local-test directory.
 
 ### Create local folders
 
@@ -109,6 +102,8 @@ packages" section above for the actual source URLs).
 > otp-build
 
 ### Run the builder image with a single feed only
+
+NOTE: NeTEx data does not work yet, so use GTFS data only for testing.
 
 INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
 
