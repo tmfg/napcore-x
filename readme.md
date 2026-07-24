@@ -1,4 +1,4 @@
-# Set Up
+# Ohjeet kontin ulkopuolella ajoon
 
 ### Opentripplanner jar-file:
 
@@ -25,6 +25,8 @@ serveri aukeaa: http://localhost:8080/
 #### Valmiista graafista käynnistys:
 
 > '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
+
+# Useful tools
 
 ## NeTEx
 
