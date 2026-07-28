@@ -1,4 +1,4 @@
-# Set Up
+# Ohjeet kontin ulkopuolella ajoon
 
 ### Opentripplanner jar-file:
 
@@ -25,6 +25,8 @@ serveri aukeaa: http://localhost:8080/
 #### Valmiista graafista käynnistys:
 
 > '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
+
+# Useful tools
 
 ## NeTEx
 
@@ -61,19 +63,72 @@ Käytetään Jaakon tarjoamia URL-linkkejä datan saavuttamiseksi. Kontti noutaa
 
 Zip paketit ovat olleet ladattuna ja sijoitettuna lokaaliin ympäristöön GTFS, OSM ja NeTEx kansioihin testausta varten
 
-# DOCKER
+# Containers
 
-### Build image Dockerfilen pohjalta:
+There are two container images: builder and server (TODO: clarify naming).
 
-> podman build -t my-otp .
+The builder image will build the OTP graph, and server will use the graph to serve OTP and UI.
 
-### Kontin käynnistys
+# Local testing (build + serve images)
 
-> podman run -d --name my-otp-container -p 8080:8080 localhost/my-otp
+These commands test the split build/serve container workflow locally. Replace
+the placeholder file names below with your own downloaded files.
 
-### Kontin bash:
+Data files for local testing will be located in local-test directory.
 
-> podman exec -it my-otp-container /bin/bash
+### Create local folders
+
+> mkdir -p local-test/input/osm local-test/input/transit local-test/output/graph
+
+### Download test data
+
+> curl -L "\<osm-extract-url\>" -o local-test/input/osm/\<osm-extract\>.pbf
+>
+> curl -L "\<gtfs-feed-url\>" -o local-test/input/transit/\<gtfs-feed\>.zip
+>
+> curl -L "\<netex-feed-url\>" -o local-test/input/transit/\<netex-feed\>.zip
+
+### Build the builder image
+
+> podman build -f src/build/Dockerfile -t otp-build .
+
+### Run the builder image with GTFS + NeTEx
+
+> podman run --rm \\
+> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
+>  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
+> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
+> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
+> -e INPUT_NETEX_PATH=/mnt/input/transit/\<netex-feed\>.zip \\
+> -e OUTPUT_GRAPH_DIR=/mnt/output \\
+> otp-build
+
+### Run the builder image with a single feed only
+
+NOTE: NeTEx data does not work yet, so use GTFS data only for testing.
+
+INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
+
+> podman run --rm \\
+> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
+>  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
+> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
+> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
+> -e OUTPUT_GRAPH_DIR=/mnt/output \\
+> otp-build
+
+### Build the serve image
+
+> podman build -f src/serve/Dockerfile -t otp-serve .
+
+### Run the serve image against the built graph
+
+> podman run --rm -p 8080:8080 \\
+> -v "$(pwd)/local-test/output/graph:/mnt/graph:ro" \\
+> -e OTP_GRAPH_DIR=/mnt/graph \\
+> otp-serve
+
+Open http://localhost:8080/ once the server has started.
 
 # Mahdollisia Azure ratkaisuja
 
