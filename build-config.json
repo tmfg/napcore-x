@@ -15,5 +15,10 @@
       "feedId": "FI",
       "source": "file:///opt/otp-data/transit/Napcorex.zip"
     }
-  ]
+  ],
+  "netexDefaults": {
+    "sharedFilePattern": "^_(?:shared_data|stops)\\.xml$",
+    "sharedGroupFilePattern": "^([^_]+)_shared_data\\.xml$",
+    "groupFilePattern": "^(line)_\\d+\\.xml$"
+  }
 }
