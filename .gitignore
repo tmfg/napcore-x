@@ -4,3 +4,12 @@ gtfs
 netex
 *.pem
 local-test
+
+# Bicep: compiled ARM JSON output (az bicep build compiles .bicep -> .json in place)
+infra/**/*.json
+
+# Bicep: local-only parameter overrides, may contain secrets - don't commit
+*.local.bicepparam
+
+# Bicep: local module/registry cache
+.bicep/

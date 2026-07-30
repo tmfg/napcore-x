@@ -1,0 +1,47 @@
+// Storage account + Azure Files share for OSM/GTFS input and the built OTP graph.
+// Deployed at resource group scope (called from main.bicep).
+
+@description('Name of the storage account. Must be globally unique, lowercase alphanumeric, 3-24 chars.')
+@minLength(3)
+@maxLength(24)
+param name string
+
+@description('Azure region.')
+param location string
+
+@description('Quota (in GiB) for the file share.')
+param fileShareQuotaGB int = 100
+
+param tags object = {}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
+  name: name
+  location: location
+  tags: tags
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2025-06-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
+resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2025-06-01' = {
+  parent: fileService
+  name: 'otp-data'
+  properties: {
+    shareQuota: fileShareQuotaGB
+  }
+}
+
+output name string = storageAccount.name
+output id string = storageAccount.id
+output fileShareName string = fileShare.name

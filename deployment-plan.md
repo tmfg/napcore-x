@@ -25,6 +25,13 @@ Based on the current state of the repo:
 - Storage account with an Azure Files share, e.g. `otp-data`, with two
   directories: `input/` (OSM + GTFS/NeTEx source files) and `graph/`
   (build output, `graph.obj`).
+- Implemented as Bicep in [infra/main.bicep](infra/main.bicep) (subscription
+  scope, creates the resource group) with modules
+  [infra/modules/acr.bicep](infra/modules/acr.bicep) and
+  [infra/modules/storage.bicep](infra/modules/storage.bicep). Parameters in
+  [infra/main.bicepparam](infra/main.bicepparam). The share's `input/` and
+  `graph/` directories aren't created by Bicep (ARM can't create
+  subdirectories in a file share) — create them manually after first deploy.
 
 #### 2. Build and push images
 
@@ -75,5 +82,5 @@ Based on the current state of the repo:
 - GTFS trip_id deduplication in `start-build.sh` is a lossy workaround for now
 - `build-config.json` is mutated in place per build run via `jq` — works, but
   is implicit. Consider generating it from a template per environment.
-- No IaC (Bicep/ARM/Terraform) exists yet — this plan should be translated
-  into actual templates once the approach above is confirmed.
+- Bicep now covers part 1 (core resources) only — parts 2-5 (image push,
+  build job, serve app, wiring) still need templates/scripts.
