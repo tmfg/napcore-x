@@ -17,6 +17,22 @@ param location string = 'swedencentral'
 @description('Quota (in GiB) for the Azure Files share.')
 param fileShareQuotaGB int = 100
 
+@description('Tag of the otp-build image to run for the graph build job, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh).')
+@minLength(1)
+param buildJobImageTag string
+
+@description('Name of the OSM extract file under the share input/ directory.')
+param osmFileName string
+
+@description('Name of the GTFS feed file under the share input/ directory.')
+param gtfsFileName string
+
+@description('vCPU cores for the build container.')
+param buildJobCpuCores int = 4
+
+@description('Memory (GiB) for the build container.')
+param buildJobMemoryInGB int = 12
+
 var resourceGroupName = 'rg-${appName}-${environmentName}'
 // Storage account names must be globally unique, lowercase alphanumeric, 3-24 chars.
 var storageAccountName = toLower('st${appName}${environmentName}')
@@ -56,8 +72,35 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
+module buildJob 'modules/build-job.bicep' = {
+  name: 'build-job-deploy'
+  scope: rg
+  params: {
+    location: location
+    acrLoginServer: acr.outputs.loginServer
+    imageTag: buildJobImageTag
+    storageAccountName: storage.outputs.name
+    fileShareName: storage.outputs.fileShareName
+    osmFileName: osmFileName
+    gtfsFileName: gtfsFileName
+    cpuCores: buildJobCpuCores
+    memoryInGB: buildJobMemoryInGB
+    tags: tags
+  }
+}
+
+module buildJobAcrAccess 'modules/acr-role-assignment.bicep' = {
+  name: 'build-job-acr-access-deploy'
+  scope: rg
+  params: {
+    acrName: acr.outputs.name
+    principalId: buildJob.outputs.identityPrincipalId
+  }
+}
+
 output resourceGroupName string = rg.name
 output acrName string = acr.outputs.name
 output acrLoginServer string = acr.outputs.loginServer
 output storageAccountName string = storage.outputs.name
 output fileShareName string = storage.outputs.fileShareName
+output buildJobContainerGroupName string = buildJob.outputs.containerGroupName

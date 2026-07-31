@@ -50,6 +50,22 @@ Based on the current state of the repo:
   Skip `INPUT_NETEX_PATH` until NeTEx import is fixed.
 - Give the job enough memory for `-Xmx8G` (>= ~10-12 GB container memory). (TODO: verify actual requirements later)
 - Output: `graph.obj` written to `graph/` on the share.
+- Implemented as an Azure Container Instance in
+  [infra/modules/build-job.bicep](infra/modules/build-job.bicep) (chose ACI
+  over a Container Apps Job to avoid standing up a Container Apps
+  Environment + Log Analytics for a single one-off run). Pulls from ACR via
+  a user-assigned managed identity granted `AcrPull` in
+  [infra/modules/acr-role-assignment.bicep](infra/modules/acr-role-assignment.bicep)
+  — no admin credentials involved. The share is mounted twice (once
+  read-only at `/mnt/otp-input`, once read-write at `/mnt/otp-output`) since
+  ACI's Azure Files volume always mounts the whole share, not a
+  subdirectory. `restartPolicy: Never` — re-run by re-deploying the module.
+  - TODO: mounting the same share twice under different permissions is only
+    enforced at the ACI mount level, not by the storage account itself —
+    the "read-only" mount doesn't stop the container from writing to
+    `input/` via the read-write mount path. Revisit with separate file
+    shares/storage accounts for `input/` vs `graph/`, or move input data
+    handling to blob storage with scoped SAS tokens, for real isolation.
 
 #### 4. Serve container (Azure App Service for Containers, Linux)
 
