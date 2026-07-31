@@ -38,11 +38,29 @@ param buildJobCpuCores int = 4
 @description('Memory (GiB) for the build container.')
 param buildJobMemoryInGB int = 12
 
+@description('''
+Whether to deploy the otp-serve App Service. Temporarily disabled
+''')
+param deployServeApp bool = false
+
+@description('Tag of the otp-serve image to run, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh). Usually the same tag as buildJobImageTag, since both images are built/pushed together.')
+@minLength(1)
+param serveAppImageTag string
+
+@description('App Service Plan SKU name for the serve app.')
+param serveAppPlanSkuName string = 'B2'
+
+@description('App Service Plan SKU tier for the serve app.')
+param serveAppPlanSkuTier string = 'Basic'
+
 var resourceGroupName = 'rg-${appName}-${environmentName}'
 // Storage account names must be globally unique, lowercase alphanumeric, 3-24 chars.
 var storageAccountName = toLower('st${appName}${environmentName}')
 // ACR names must be globally unique, alphanumeric, 5-50 chars.
 var acrName = toLower('acr${appName}${environmentName}')
+// Web app names must be globally unique (become <name>.azurewebsites.net).
+var serveAppName = toLower('app-${appName}-${environmentName}')
+var serveAppPlanName = 'asp-${appName}-${environmentName}'
 
 var tags = {
   app: appName
@@ -123,9 +141,55 @@ module buildJob 'modules/build-job.bicep' = if (deployBuildJob) {
   ]
 }
 
+module serveAppIdentity 'modules/identity.bicep' = if (deployServeApp) {
+  name: 'serve-app-identity-deploy'
+  scope: rg
+  params: {
+    location: location
+    name: 'id-otp-serve'
+    tags: tags
+  }
+}
+
+module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = if (deployServeApp) {
+  name: 'serve-app-acr-access-deploy'
+  scope: rg
+  params: {
+    acrName: acr.outputs.name
+    principalId: serveAppIdentity.?outputs.principalId ?? ''
+  }
+}
+
+module serveApp 'modules/serve-app.bicep' = if (deployServeApp) {
+  name: 'serve-app-deploy'
+  scope: rg
+  params: {
+    name: serveAppName
+    planName: serveAppPlanName
+    location: location
+    acrLoginServer: acr.outputs.loginServer
+    imageTag: serveAppImageTag
+    identityResourceId: serveAppIdentity.?outputs.id ?? ''
+    identityClientId: serveAppIdentity.?outputs.clientId ?? ''
+    storageAccountName: storage.outputs.name
+    fileShareName: storage.outputs.fileShareName
+    planSkuName: serveAppPlanSkuName
+    planSkuTier: serveAppPlanSkuTier
+    tags: tags
+  }
+  // Same reasoning as buildJob's explicit dependsOn: the role assignment
+  // must exist before the web app is created, since App Service can attempt
+  // to pull the image as soon as the site is created/started.
+  dependsOn: [
+    serveAppAcrAccess
+  ]
+}
+
 output resourceGroupName string = rg.name
 output acrName string = acr.outputs.name
 output acrLoginServer string = acr.outputs.loginServer
 output storageAccountName string = storage.outputs.name
 output fileShareName string = storage.outputs.fileShareName
 output buildJobContainerGroupName string = buildJob.?outputs.containerGroupName ?? ''
+output serveAppName string = serveApp.?outputs.name ?? ''
+output serveAppHostName string = serveApp.?outputs.defaultHostName ?? ''

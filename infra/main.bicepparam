@@ -12,3 +12,7 @@ param deployBuildJob = false
 param buildJobImageTag = '2.8.1-f71f0f2'
 param osmFileName = 'estonia.pbf'
 param gtfsFileName = 'napcorexgtfs.zip'
+
+// Serve app disabled TMP
+param deployServeApp = false
+param serveAppImageTag = '2.8.1-f71f0f2'

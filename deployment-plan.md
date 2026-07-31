@@ -78,6 +78,32 @@ Based on the current state of the repo:
   (Azure Storage Mounts), at the path used for `OTP_GRAPH_DIR`.
 - App settings: `OTP_GRAPH_DIR=<mounted graph path>`, `WEBSITES_PORT=8080`.
 - Enable "Always On" (graph load time is non-trivial; avoid idling out).
+- Lowered `JAVA_OPTS` from `-Xmx8G` to `-Xmx2G` in
+  [src/serve/Dockerfile](src/serve/Dockerfile) for cloud serving (the
+  Estonia-sized graph doesn't need 8G), enabling a much cheaper App Service
+  Plan tier.
+- Implemented as an App Service Plan (Linux, Basic B2 — 2 vCPU/3.5 GiB) and
+  Web App for Containers in
+  [infra/modules/serve-app.bicep](infra/modules/serve-app.bicep). Pulls from
+  ACR via a user-assigned managed identity granted `AcrPull` (same pattern
+  as the build job) — no admin credentials involved. The whole Azure Files
+  share is mounted read-write at `/mnt/otp-data` (App Service's classic
+  storage-mounts feature has no read-only option), with
+  `OTP_GRAPH_DIR=/mnt/otp-data/output/graph`.
+  - TODO: the app only needs read access to `output/graph/`, but the mount
+    is read-write over the whole share. Revisit with a separate
+    share/storage account for graph output if tighter isolation is needed.
+- Gated behind `deployServeApp` in [infra/main.bicep](infra/main.bicep),
+  disabled by default — same `Microsoft.Authorization/roleAssignments/write`
+  permission blocker as `deployBuildJob` (see Part 3). Re-enable once that
+  permission is granted.
+- Security: `httpsOnly: true`, `minTlsVersion: '1.2'`,
+  `ftpsState: 'Disabled'` set in
+  [infra/modules/serve-app.bicep](infra/modules/serve-app.bicep). The app is
+  intentionally left publicly accessible with no auth/IP restriction (it's
+  meant to be a usable public trip-planner demo) — a deliberate decision,
+  not an oversight. The storage-key blast-radius TODO above is deferred for
+  the same reason (see Part 3's matching TODO).
 
 #### 5. Wiring build -> serve
 
