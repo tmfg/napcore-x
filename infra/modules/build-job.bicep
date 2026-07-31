@@ -8,11 +8,17 @@
 // scheduling or event triggers are needed.
 //
 // Pulls from ACR via a user-assigned managed identity (no admin user/shared
-// credentials) - the caller must grant that identity AcrPull on the registry,
-// see modules/acr-role-assignment.bicep.
+// credentials) - the caller must create that identity and grant it AcrPull
+// on the registry *before* this module runs, see modules/identity.bicep and
+// modules/acr-role-assignment.bicep. (The identity is created separately,
+// not in this module, so the role assignment can complete before this
+// container group is created and starts pulling the image.)
 
 @description('Azure region.')
 param location string
+
+@description('Resource ID of the user-assigned managed identity to pull the image with. Must already have AcrPull on the registry.')
+param identityResourceId string
 
 @description('Login server of the ACR to pull otp-build from, e.g. acrname.azurecr.io.')
 param acrLoginServer string
@@ -45,12 +51,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' existing 
   name: storageAccountName
 }
 
-resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
-  name: 'id-otp-build'
-  location: location
-  tags: tags
-}
-
 resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01' = {
   name: 'aci-otp-build'
   location: location
@@ -58,7 +58,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${identity.id}': {}
+      '${identityResourceId}': {}
     }
   }
   properties: {
@@ -68,7 +68,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
     imageRegistryCredentials: [
       {
         server: acrLoginServer
-        identity: identity.id
+        identity: identityResourceId
       }
     ]
     containers: [
@@ -144,5 +144,4 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
   }
 }
 
-output identityPrincipalId string = identity.properties.principalId
 output containerGroupName string = containerGroup.name

@@ -32,6 +32,12 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
 resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2025-06-01' = {
   parent: storageAccount
   name: 'default'
+  properties: {
+    shareDeleteRetentionPolicy: {
+      enabled: true
+      days: 7
+    }
+  }
 }
 
 resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2025-06-01' = {
@@ -39,6 +45,8 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2025-0
   name: 'otp-data'
   properties: {
     shareQuota: fileShareQuotaGB
+    // Explicit default access tier for a share in a general-purpose v2 account.
+    accessTier: 'TransactionOptimized'
   }
 }
 

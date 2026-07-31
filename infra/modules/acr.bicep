@@ -25,6 +25,18 @@ resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
     // Disabling public access requires Premium SKU + a private endpoint (VNet),
     // which isn't set up yet. Decided to keep public access for now (2026-07-30).
     publicNetworkAccess: 'Enabled'
+    dataEndpointEnabled: false
+    encryption: {
+      // customer manager encryption disabled
+      status: 'disabled'
+    }
+    networkRuleBypassAllowedForTasks: false
+    // TODO: consider switching to 'AbacRepositoryPermissions' later - it
+    // stops Owner/Contributor from getting implicit registry-wide push/pull
+    // (least-privilege) and allows per-repository scoped role assignments.
+    // One-way, registry-wide change - would need any implicit-access
+    // tooling/scripts updated to use explicit AcrPush/AcrPull first.
+    roleAssignmentMode: 'LegacyRegistryPermissions'
   }
 }
 
