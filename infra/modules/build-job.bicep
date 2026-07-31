@@ -1,6 +1,8 @@
 // Runs the otp-build image once in Azure Container Instances (ACI), reading
 // OSM/GTFS from the "input/" directory of the Azure Files share and writing
-// graph.obj to "graph/". Deployed at resource group scope (called from main.bicep).
+// graph.obj to "output/graph/" (mirrors the local-test/output/graph/ layout
+// used for local podman runs). Deployed at resource group scope (called
+// from main.bicep).
 //
 // Chose ACI over a Container Apps Job: it's a genuine one-off run (no
 // recurring schedule yet), and avoids standing up a Container Apps
@@ -30,7 +32,7 @@ param imageTag string
 @description('Storage account name backing the Azure Files share.')
 param storageAccountName string
 
-@description('Name of the file share containing the input/ and graph/ directories.')
+@description('Name of the file share containing the input/ and output/graph/ directories.')
 param fileShareName string
 
 @description('Name of the OSM extract file under the share input/ directory.')
@@ -93,7 +95,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
             }
             {
               name: 'OUTPUT_GRAPH_DIR'
-              value: '/mnt/otp-output/graph'
+              value: '/mnt/otp-output/output/graph'
             }
           ]
           volumeMounts: [
@@ -113,14 +115,14 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
     ]
     // The same share is mounted twice (once read-only, once read-write)
     // since ACI's azureFile volume always mounts the whole share, not a
-    // subdirectory - this keeps input/ read-only and graph/ writable.
+    // subdirectory - this keeps input/ read-only and output/graph/ writable.
     // TODO: revisit - mounting the same share twice under different
     // permissions is only enforced at the ACI mount level, not by the
     // storage account itself, so a container process could still open the
     // "read-only" mount's underlying share for writes via the read-write
     // mount path. Consider separate file shares (or storage accounts) for
-    // input/ vs graph/, or moving input data handling to blob storage with
-    // scoped SAS tokens, for real isolation.
+    // input/ vs output/graph/, or moving input data handling to blob
+    // storage with scoped SAS tokens, for real isolation.
     volumes: [
       {
         name: 'otp-data-ro'
