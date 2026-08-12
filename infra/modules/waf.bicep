@@ -88,6 +88,94 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
           ]
           action: 'Block'
         }
+        {
+          // OTP's REST/GraphQL APIs only need GET/HEAD/OPTIONS/POST - block
+          // anything else (PUT, DELETE, TRACE, CONNECT, PATCH, ...).
+          name: 'BlockDisallowedHttpMethods'
+          priority: 110
+          enabledState: 'Enabled'
+          ruleType: 'MatchRule'
+          matchConditions: [
+            {
+              matchVariable: 'RequestMethod'
+              operator: 'Equal'
+              negateCondition: true
+              matchValue: [
+                'GET'
+                'HEAD'
+                'OPTIONS'
+                'POST'
+              ]
+            }
+          ]
+          action: 'Block'
+        }
+        {
+          // Size constraint: reject abnormally long request URIs (crude
+          // mitigation for buffer/log-flooding and some injection attempts,
+          // not a substitute for the managed rule sets Standard can't use).
+          name: 'BlockOversizedUri'
+          priority: 120
+          enabledState: 'Enabled'
+          ruleType: 'MatchRule'
+          matchConditions: [
+            {
+              matchVariable: 'RequestUri'
+              operator: 'GreaterThan'
+              matchValue: [
+                '2048'
+              ]
+            }
+          ]
+          action: 'Block'
+        }
+        {
+          // Size constraint: reject abnormally long query strings.
+          name: 'BlockOversizedQueryString'
+          priority: 130
+          enabledState: 'Enabled'
+          ruleType: 'MatchRule'
+          matchConditions: [
+            {
+              matchVariable: 'QueryString'
+              operator: 'GreaterThan'
+              matchValue: [
+                '2048'
+              ]
+            }
+          ]
+          action: 'Block'
+        }
+        {
+          // Best-effort blocklist of common scanner/attack-tool user
+          // agents - a rough substitute for Bot Manager, which isn't
+          // available on Front Door Standard.
+          name: 'BlockKnownBadUserAgents'
+          priority: 140
+          enabledState: 'Enabled'
+          ruleType: 'MatchRule'
+          matchConditions: [
+            {
+              matchVariable: 'RequestHeader'
+              selector: 'User-Agent'
+              operator: 'Contains'
+              transforms: [
+                'Lowercase'
+              ]
+              matchValue: [
+                'sqlmap'
+                'nikto'
+                'nmap'
+                'masscan'
+                'nessus'
+                'acunetix'
+                'nuclei'
+                'w3af'
+              ]
+            }
+          ]
+          action: 'Block'
+        }
       ]
     }
   }
