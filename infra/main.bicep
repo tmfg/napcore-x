@@ -53,6 +53,13 @@ param serveAppPlanSkuName string = 'B2'
 @description('App Service Plan SKU tier for the serve app.')
 param serveAppPlanSkuTier string = 'Basic'
 
+@description('Azure Front Door WAF policy mode. Start in Detection, switch to Prevention once logs have been reviewed for false positives.')
+@allowed([
+  'Detection'
+  'Prevention'
+])
+param wafMode string = 'Detection'
+
 var resourceGroupName = 'rg-${appName}-${environmentName}'
 // Storage account names must be globally unique, lowercase alphanumeric, 3-24 chars.
 var storageAccountName = toLower('st${appName}${environmentName}')
@@ -61,6 +68,15 @@ var acrName = toLower('acr${appName}${environmentName}')
 // Web app names must be globally unique (become <name>.azurewebsites.net).
 var serveAppName = toLower('app-${appName}-${environmentName}')
 var serveAppPlanName = 'asp-${appName}-${environmentName}'
+// Predictable default hostname of the serve app - computed here (not read
+// from the serveApp module's output) so the waf module doesn't have to
+// depend on the serveApp module, avoiding a circular dependency (serveApp
+// needs the waf module's frontDoorId output for its Access Restrictions).
+var serveAppHostName = '${serveAppName}.azurewebsites.net'
+var frontDoorProfileName = 'fd-${appName}-${environmentName}'
+var frontDoorEndpointName = toLower('fde-${appName}-${environmentName}')
+// WAF policy names must be alphanumeric only (no hyphens).
+var wafPolicyName = toLower('waf${appName}${environmentName}')
 
 var tags = {
   app: appName
@@ -160,6 +176,26 @@ module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = if (deployServeAp
   }
 }
 
+// Front Door + WAF, gated on the same deployServeApp flag (a WAF only
+// makes sense once the serve app exists) - NOT a separate deployWaf flag.
+// Depends only on the serve app's predictable hostname (a string, known
+// before deployment), not on the serveApp module's output, so it can be
+// deployed independently and the serveApp module can in turn depend on
+// this module's frontDoorId output without a circular dependency.
+module waf 'modules/waf.bicep' = if (deployServeApp) {
+  name: 'waf-deploy'
+  scope: rg
+  params: {
+    profileName: frontDoorProfileName
+    endpointName: frontDoorEndpointName
+    wafPolicyName: wafPolicyName
+    originHostName: serveAppHostName
+    wafMode: wafMode
+    logsStorageAccountId: storage.outputs.id
+    tags: tags
+  }
+}
+
 module serveApp 'modules/serve-app.bicep' = if (deployServeApp) {
   name: 'serve-app-deploy'
   scope: rg
@@ -173,6 +209,7 @@ module serveApp 'modules/serve-app.bicep' = if (deployServeApp) {
     identityClientId: serveAppIdentity.?outputs.clientId ?? ''
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
+    frontDoorId: waf.?outputs.frontDoorId ?? ''
     planSkuName: serveAppPlanSkuName
     planSkuTier: serveAppPlanSkuTier
     tags: tags
@@ -193,3 +230,5 @@ output fileShareName string = storage.outputs.fileShareName
 output buildJobContainerGroupName string = buildJob.?outputs.containerGroupName ?? ''
 output serveAppName string = serveApp.?outputs.name ?? ''
 output serveAppHostName string = serveApp.?outputs.defaultHostName ?? ''
+output frontDoorEndpointHostName string = waf.?outputs.endpointHostName ?? ''
+output frontDoorId string = waf.?outputs.frontDoorId ?? ''
