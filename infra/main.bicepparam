@@ -5,14 +5,9 @@ param environmentName = 'dev'
 param location = 'swedencentral'
 param fileShareQuotaGB = 100
 
-// Build job disabled TMP
-param deployBuildJob = false
-
 // TODO: error out if the this is unset, instead of silently using a placeholder value.
-param buildJobImageTag = '2.8.1-f71f0f2'
+param buildJobImageTag = '2.8.1-2434f7f-dirty'
 param osmFileName = 'estonia.pbf'
 param gtfsFileName = 'napcorexgtfs.zip'
 
-// Serve app disabled TMP
-param deployServeApp = false
-param serveAppImageTag = '2.8.1-f71f0f2'
+param serveAppImageTag = '2.8.1-2434f7f-dirty'

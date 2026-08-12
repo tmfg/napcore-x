@@ -17,11 +17,6 @@ param location string = 'swedencentral'
 @description('Quota (in GiB) for the Azure Files share.')
 param fileShareQuotaGB int = 100
 
-@description('''
-TMP solution, perm issue
-''')
-param deployBuildJob bool = false
-
 @description('Tag of the otp-build image to run for the graph build job, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh).')
 @minLength(1)
 param buildJobImageTag string
@@ -37,11 +32,6 @@ param buildJobCpuCores int = 4
 
 @description('Memory (GiB) for the build container.')
 param buildJobMemoryInGB int = 12
-
-@description('''
-Whether to deploy the otp-serve App Service. Temporarily disabled
-''')
-param deployServeApp bool = false
 
 @description('Tag of the otp-serve image to run, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh). Usually the same tag as buildJobImageTag, since both images are built/pushed together.')
 @minLength(1)
@@ -111,7 +101,7 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
-module buildJobIdentity 'modules/identity.bicep' = if (deployBuildJob) {
+module buildJobIdentity 'modules/identity.bicep' = {
   name: 'build-job-identity-deploy'
   scope: rg
   params: {
@@ -121,23 +111,23 @@ module buildJobIdentity 'modules/identity.bicep' = if (deployBuildJob) {
   }
 }
 
-module buildJobAcrAccess 'modules/acr-role-assignment.bicep' = if (deployBuildJob) {
+module buildJobAcrAccess 'modules/acr-role-assignment.bicep' = {
   name: 'build-job-acr-access-deploy'
   scope: rg
   params: {
     acrName: acr.outputs.name
-    principalId: buildJobIdentity.?outputs.principalId ?? ''
+    principalId: buildJobIdentity.outputs.principalId
   }
 }
 
-module buildJob 'modules/build-job.bicep' = if (deployBuildJob) {
+module buildJob 'modules/build-job.bicep' = {
   name: 'build-job-deploy'
   scope: rg
   params: {
     location: location
     acrLoginServer: acr.outputs.loginServer
     imageTag: buildJobImageTag
-    identityResourceId: buildJobIdentity.?outputs.id ?? ''
+    identityResourceId: buildJobIdentity.outputs.id
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
     osmFileName: osmFileName
@@ -157,7 +147,7 @@ module buildJob 'modules/build-job.bicep' = if (deployBuildJob) {
   ]
 }
 
-module serveAppIdentity 'modules/identity.bicep' = if (deployServeApp) {
+module serveAppIdentity 'modules/identity.bicep' = {
   name: 'serve-app-identity-deploy'
   scope: rg
   params: {
@@ -167,22 +157,21 @@ module serveAppIdentity 'modules/identity.bicep' = if (deployServeApp) {
   }
 }
 
-module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = if (deployServeApp) {
+module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = {
   name: 'serve-app-acr-access-deploy'
   scope: rg
   params: {
     acrName: acr.outputs.name
-    principalId: serveAppIdentity.?outputs.principalId ?? ''
+    principalId: serveAppIdentity.outputs.principalId
   }
 }
 
-// Front Door + WAF, gated on the same deployServeApp flag (a WAF only
-// makes sense once the serve app exists) - NOT a separate deployWaf flag.
-// Depends only on the serve app's predictable hostname (a string, known
-// before deployment), not on the serveApp module's output, so it can be
-// deployed independently and the serveApp module can in turn depend on
-// this module's frontDoorId output without a circular dependency.
-module waf 'modules/waf.bicep' = if (deployServeApp) {
+// Front Door + WAF. Depends only on the serve app's predictable hostname
+// (a string, known before deployment), not on the serveApp module's
+// output, so it can be deployed independently and the serveApp module can
+// in turn depend on this module's frontDoorId output without a circular
+// dependency.
+module waf 'modules/waf.bicep' = {
   name: 'waf-deploy'
   scope: rg
   params: {
@@ -196,7 +185,7 @@ module waf 'modules/waf.bicep' = if (deployServeApp) {
   }
 }
 
-module serveApp 'modules/serve-app.bicep' = if (deployServeApp) {
+module serveApp 'modules/serve-app.bicep' = {
   name: 'serve-app-deploy'
   scope: rg
   params: {
@@ -205,11 +194,11 @@ module serveApp 'modules/serve-app.bicep' = if (deployServeApp) {
     location: location
     acrLoginServer: acr.outputs.loginServer
     imageTag: serveAppImageTag
-    identityResourceId: serveAppIdentity.?outputs.id ?? ''
-    identityClientId: serveAppIdentity.?outputs.clientId ?? ''
+    identityResourceId: serveAppIdentity.outputs.id
+    identityClientId: serveAppIdentity.outputs.clientId
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
-    frontDoorId: waf.?outputs.frontDoorId ?? ''
+    frontDoorId: waf.outputs.frontDoorId
     planSkuName: serveAppPlanSkuName
     planSkuTier: serveAppPlanSkuTier
     tags: tags
@@ -227,8 +216,8 @@ output acrName string = acr.outputs.name
 output acrLoginServer string = acr.outputs.loginServer
 output storageAccountName string = storage.outputs.name
 output fileShareName string = storage.outputs.fileShareName
-output buildJobContainerGroupName string = buildJob.?outputs.containerGroupName ?? ''
-output serveAppName string = serveApp.?outputs.name ?? ''
-output serveAppHostName string = serveApp.?outputs.defaultHostName ?? ''
-output frontDoorEndpointHostName string = waf.?outputs.endpointHostName ?? ''
-output frontDoorId string = waf.?outputs.frontDoorId ?? ''
+output buildJobContainerGroupName string = buildJob.outputs.containerGroupName
+output serveAppName string = serveApp.outputs.name
+output serveAppHostName string = serveApp.outputs.defaultHostName
+output frontDoorEndpointHostName string = waf.outputs.endpointHostName
+output frontDoorId string = waf.outputs.frontDoorId
