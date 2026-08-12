@@ -5,9 +5,9 @@ param environmentName = 'dev'
 param location = 'swedencentral'
 param fileShareQuotaGB = 100
 
-// TODO: error out if the this is unset, instead of silently using a placeholder value.
-param buildJobImageTag = '2.8.1-2434f7f-dirty'
+// Placeholder values, committed to git. For real deploys, use
+// infra/main.local.bicepparam instead (gitignored - see readme.md).
+param buildJobImageTag = 'REPLACE_WITH_BUILD_JOB_IMAGE_TAG'
+param serveAppImageTag = 'REPLACE_WITH_SERVE_APP_IMAGE_TAG'
 param osmFileName = 'estonia.pbf'
 param gtfsFileName = 'napcorexgtfs.zip'
-
-param serveAppImageTag = '2.8.1-2434f7f-dirty'

@@ -130,6 +130,49 @@ INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be
 
 Open http://localhost:8080/ once the server has started.
 
+# Azure infra deployment (Bicep)
+
+Infra lives in [infra/](infra/) and deploys at subscription scope via
+[infra/main.bicep](infra/main.bicep) (creates its own resource group). Two
+parameter files:
+
+- [infra/main.bicepparam](infra/main.bicepparam) — committed to git.
+  `buildJobImageTag`/`serveAppImageTag` are placeholder values here (they're
+  required params with no default in `main.bicep`), so this file alone
+  isn't meant to be deployed with for real.
+- `infra/main.local.bicepparam` — gitignored (matches the
+  `*.local.bicepparam` pattern in [.gitignore](.gitignore)), used for real
+  deployments. It's a standalone parameter file (`using './main.bicep'`,
+  same as `main.bicepparam`) that sets real image tags plus the other
+  required params (`osmFileName`, `gtfsFileName`); anything not set falls
+  back to `main.bicep`'s defaults. Not present after a fresh clone — create
+  it locally (see template below) before deploying.
+
+`infra/main.local.bicepparam` template:
+
+```
+using './main.bicep'
+
+param buildJobImageTag = '<otp-version>-<git-sha>'
+param serveAppImageTag = '<otp-version>-<git-sha>'
+param osmFileName = 'estonia.pbf'
+param gtfsFileName = 'napcorexgtfs.zip'
+```
+
+Image tags come from
+[scripts/build-and-push-images.sh](scripts/build-and-push-images.sh)'s
+output, e.g. `2.8.1-2434f7f`.
+
+## Deploy commands
+
+Preview changes:
+
+> az deployment sub what-if --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam
+
+Deploy:
+
+> az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --name napcorexdemo-$(date +%Y%m%d%H%M)
+
 # Mahdollisia Azure ratkaisuja
 
 ### Azure container service
