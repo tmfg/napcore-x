@@ -15,6 +15,14 @@
 // Front Door Standard (not Premium) - no Bot Manager rules, no Private
 // Link to the origin needed per plan (origin stays public, locked down
 // via the X-Azure-FDID header check instead).
+//
+// IMPORTANT: Front Door Standard's WAF does NOT support managed rule sets
+// (Default Rule Set/OWASP protections, Bot Manager) at all - that's a
+// Premium-only capability, confirmed 2026-08-12 after a deployment error
+// ("...does not support ManagedRules"). Standard's WAF is limited to
+// custom rules only. A baseline rate-limiting custom rule is included
+// below; add more custom rules (IP/geo blocking, header/query matching)
+// as needed - there's no signature-based attack detection on this tier.
 
 @description('Name of the Front Door profile.')
 param profileName string
@@ -58,12 +66,27 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
       enabledState: 'Enabled'
       mode: wafMode
     }
-    managedRules: {
-      managedRuleSets: [
+    // No managedRules block: Front Door Standard's WAF doesn't support
+    // managed rule sets (see note above) - only customRules are allowed.
+    customRules: {
+      rules: [
         {
-          ruleSetType: 'Microsoft_DefaultRuleSet'
-          ruleSetVersion: '2.1'
-          ruleSetAction: 'Block'
+          name: 'RateLimitPerClientIP'
+          priority: 100
+          enabledState: 'Enabled'
+          ruleType: 'RateLimitRule'
+          rateLimitThreshold: 300
+          rateLimitDurationInMinutes: 1
+          matchConditions: [
+            {
+              matchVariable: 'RequestUri'
+              operator: 'Contains'
+              matchValue: [
+                '/'
+              ]
+            }
+          ]
+          action: 'Block'
         }
       ]
     }
