@@ -61,18 +61,21 @@ Open http://localhost:8080/ once the server has started.
 
 Infra lives in [infra/](infra/) and deploys at subscription scope via [infra/main.bicep](infra/main.bicep) (creates its own resource group).
 
-Default parameters are defined in [infra/main.bicepparam](infra/main.bicepparam) but it does not contain `buildJobImageTag`/`serveAppImageTag` as they contain git commit hash and need to be updated whenever new images are pushed.
+Some default parameters are defined in [infra/main.bicepparam](infra/main.bicepparam) but it does not contain all of the parameters and can't be used directly for deployment. Parameters for image tags, input filenames, secrets (none currently) should not be committed to git but instead defined in `infra/main.local.bicepparam`.
 
-Define them in file `infra/main.local.bicepparam` with template:
+`infra/main.local.bicepparam` template:
 
 ```
 using './main.bicep'
+extends './main.bicepparam'
 
 param buildJobImageTag = '<otp-version>-<git-sha>'
 param serveAppImageTag = '<otp-version>-<git-sha>'
-param osmFileName = 'estonia.pbf'
-param gtfsFileName = 'napcorexgtfs.zip'
+param osmFileName = '<osm-file>.pbf'
+param gtfsFileName = '<gtfs-file>.zip'
 ```
+
+Override any of `main.bicepparam`'s shared values here too if a particular deploy needs something different.
 
 Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-images.sh) output, e.g. `2.8.1-1234abc`.
 
