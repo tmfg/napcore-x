@@ -42,6 +42,9 @@ param fileShareName string
 @minLength(1)
 param frontDoorId string
 
+@description('Resource ID of the storage account to send App Service diagnostic logs to.')
+param logsStorageAccountId string
+
 @description('App Service Plan SKU name, e.g. B2.')
 param planSkuName string = 'B2'
 
@@ -137,6 +140,28 @@ resource storageMounts 'Microsoft.Web/sites/config@2024-11-01' = {
       mountPath: '/mnt/otp-data'
       accessKey: storageAccount.listKeys().keys[0].value
     }
+  }
+}
+
+resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'diag-otp-serve-app'
+  scope: webApp
+  properties: {
+    storageAccountId: logsStorageAccountId
+    logs: [
+      {
+        category: 'AppServiceHTTPLogs'
+        enabled: true
+      }
+      {
+        category: 'AppServiceConsoleLogs'
+        enabled: true
+      }
+      {
+        category: 'AppServicePlatformLogs'
+        enabled: true
+      }
+    ]
   }
 }
 

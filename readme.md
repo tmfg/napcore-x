@@ -94,6 +94,11 @@ Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-i
 - The build job container reads the input files, builds an OTP graph, and writes it to the output/ directory on the same file share.
 - The serve app mounts the file share, loads the graph, and serves routing requests through Front Door.
 
+### Logging / monitoring
+
+- Front Door/WAF access, health probe, and WAF logs, and App Service HTTP/console/platform logs are sent to the storage account (`insights-logs-*` blob containers).
+- Logs older than 30 days are automatically deleted.
+
 ### Deploy instructions
 
 There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 5.

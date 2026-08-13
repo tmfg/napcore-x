@@ -185,6 +185,7 @@ module serveApp 'modules/serve-app.bicep' = {
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
     frontDoorId: waf.outputs.frontDoorId
+    logsStorageAccountId: storage.outputs.id
     planSkuName: serveAppPlanSkuName
     planSkuTier: serveAppPlanSkuTier
     tags: tags

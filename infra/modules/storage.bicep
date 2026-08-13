@@ -50,6 +50,41 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2025-0
   }
 }
 
+// Diagnostic-settings-to-storage-account (waf.bicep, serve-app.bicep) auto-creates blob containers named insights-logs-*
+// set retention policy here
+resource managementPolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2023-01-01' = {
+  parent: storageAccount
+  name: 'default'
+  properties: {
+    policy: {
+      rules: [
+        {
+          name: 'delete-old-diagnostic-logs'
+          enabled: true
+          type: 'Lifecycle'
+          definition: {
+            filters: {
+              blobTypes: [
+                'blockBlob'
+              ]
+              prefixMatch: [
+                'insights-logs-'
+              ]
+            }
+            actions: {
+              baseBlob: {
+                delete: {
+                  daysAfterModificationGreaterThan: 30
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
 output name string = storageAccount.name
 output id string = storageAccount.id
 output fileShareName string = fileShare.name
