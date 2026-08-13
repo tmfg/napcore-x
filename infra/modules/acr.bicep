@@ -18,7 +18,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
   }
   properties: {
     adminUserEnabled: false
-    // TODO: public access enabled for now
+    // TODO: public access enabled for now. Make private if needed? But requires private endpoint etc.
     publicNetworkAccess: 'Enabled'
     dataEndpointEnabled: false
     encryption: {

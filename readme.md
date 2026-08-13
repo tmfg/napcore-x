@@ -1,5 +1,11 @@
 # Napcore x demo
 
+## Install requirements
+
+Azure CLI and Bicep for deployment.
+
+Docker or Podman for running containers locally.
+
 ## Local testing (build + serve images)
 
 These commands test the split build/serve container workflow locally. Replace
@@ -34,7 +40,8 @@ Data files for local testing will be located in local-test directory.
 > -e OUTPUT_GRAPH_DIR=/mnt/output \\
 > otp-build
 
-NOTE: Can run with either netex, gtfs or both
+NOTE: Can run with either netex, gtfs or both.
+
 INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
 
 ### Build the serve image
@@ -52,12 +59,9 @@ Open http://localhost:8080/ once the server has started.
 
 ## Azure infra deployment (Bicep)
 
-Infra lives in [infra/](infra/) and deploys at subscription scope via
-[infra/main.bicep](infra/main.bicep) (creates its own resource group). Two
-parameter files:
+Infra lives in [infra/](infra/) and deploys at subscription scope via [infra/main.bicep](infra/main.bicep) (creates its own resource group).
 
-[infra/main.bicepparam](infra/main.bicepparam) does not contain
-`buildJobImageTag`/`serveAppImageTag` as they are tagged with git commit sha
+Default parameters are defined in [infra/main.bicepparam](infra/main.bicepparam) but it does not contain `buildJobImageTag`/`serveAppImageTag` as they contain git commit hash and need to be updated whenever new images are pushed.
 
 Define them in file `infra/main.local.bicepparam` with template:
 
@@ -72,7 +76,44 @@ param gtfsFileName = 'napcorexgtfs.zip'
 
 Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-images.sh) output, e.g. `2.8.1-1234abc`.
 
-### Deploy commands
+### Deploy instructions
+
+There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 5.
+
+TODO: describe what to do if only data changes, or only OTP images need to be updated.
+
+#### 1. Create the base deployment
+
+TODO: flag to create partial base deployment
+
+#### 2. Create the necessary file share directories
+
+Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /output, /output/graph
+TODO: cli method was not working before so I used the web portal
+
+#### 3. Upload OTP input data
+
+TODO: current method is to use web portal to add data packages to the file share `otp-data`.
+
+GTFS/NeTEx data under /input/transit and OSM data under /input/osm
+
+The filenames of the packages need to be in pp params. TODO: only one file per type supported from now
+
+#### 4. Update container images in container registry
+
+Whenever changes are made to the container images (otp-build, otp-serve), new images need to be created and pushed to AZ.
+
+Login to Azure CLI:
+
+> az login
+
+Build and push images. This will use your Azure credentials to push to ACR, so need access. By default it will be given to Owner/Contributor of the ACR.
+
+> ./scripts/build-and-push-images.sh
+
+The script will output the new image tags, which will need to be updated to `infra/main.local.bicepparam`. The tag contains current git commit hash, as well as -dirty suffix if there are unstaged changes.
+
+#### 5. Deploy all resources
 
 Preview changes:
 
@@ -81,6 +122,10 @@ Preview changes:
 Deploy:
 
 > az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --name napcorexdemo-$(date +%Y%m%d%H%M)
+
+NOTE: on a fresh deployment there could be permission problems if the User Managed Identity permissions propagate too slowly. If that happens, try again.
+
+When a new deployment is made, the OTP build script will run and the serve app will start serving the graph. TODO: a better way to generate graph when only data changes?
 
 ## Run OTP from jar
 

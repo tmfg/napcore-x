@@ -124,7 +124,7 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
   }
 }
 
-// TODO: Azure Storage Mount  gives the app read-write access to
+// TODO: Azure Storage Mount gives the app read-write access to
 // the whole share (no read-only option). Fix if needed, for example use separate share for the otp graph
 resource storageMounts 'Microsoft.Web/sites/config@2024-11-01' = {
   parent: webApp
