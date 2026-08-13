@@ -43,7 +43,7 @@ param serveAppPlanSkuName string = 'B2'
 @description('App Service Plan SKU tier for the serve app.')
 param serveAppPlanSkuTier string = 'Basic'
 
-@description('Azure Front Door WAF policy mode. Start in Detection, switch to Prevention once logs have been reviewed for false positives.')
+@description('Azure Front Door WAF policy mode.')
 @allowed([
   'Detection'
   'Prevention'
@@ -58,10 +58,7 @@ var acrName = toLower('acr${appName}${environmentName}')
 // Web app names must be globally unique (become <name>.azurewebsites.net).
 var serveAppName = toLower('app-${appName}-${environmentName}')
 var serveAppPlanName = 'asp-${appName}-${environmentName}'
-// Predictable default hostname of the serve app - computed here (not read
-// from the serveApp module's output) so the waf module doesn't have to
-// depend on the serveApp module, avoiding a circular dependency (serveApp
-// needs the waf module's frontDoorId output for its Access Restrictions).
+// Predictable default hostname of the serve app
 var serveAppHostName = '${serveAppName}.azurewebsites.net'
 var frontDoorProfileName = 'fd-${appName}-${environmentName}'
 var frontDoorEndpointName = toLower('fde-${appName}-${environmentName}')
@@ -136,12 +133,6 @@ module buildJob 'modules/build-job.bicep' = {
     memoryInGB: buildJobMemoryInGB
     tags: tags
   }
-  // Explicit dependency (no data dependency exists otherwise): the role
-  // assignment must exist before the container group is created, since ACI
-  // starts pulling the image immediately on creation. Without this, the
-  // role assignment module - which only depends on buildJobIdentity, not on
-  // buildJob - could be deployed in parallel with or after buildJob,
-  // causing "InaccessibleImage" errors.
   dependsOn: [
     buildJobAcrAccess
   ]
@@ -166,11 +157,6 @@ module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = {
   }
 }
 
-// Front Door + WAF. Depends only on the serve app's predictable hostname
-// (a string, known before deployment), not on the serveApp module's
-// output, so it can be deployed independently and the serveApp module can
-// in turn depend on this module's frontDoorId output without a circular
-// dependency.
 module waf 'modules/waf.bicep' = {
   name: 'waf-deploy'
   scope: rg
@@ -203,9 +189,6 @@ module serveApp 'modules/serve-app.bicep' = {
     planSkuTier: serveAppPlanSkuTier
     tags: tags
   }
-  // Same reasoning as buildJob's explicit dependsOn: the role assignment
-  // must exist before the web app is created, since App Service can attempt
-  // to pull the image as soon as the site is created/started.
   dependsOn: [
     serveAppAcrAccess
   ]
