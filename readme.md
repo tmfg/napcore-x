@@ -137,9 +137,8 @@ Infra lives in [infra/](infra/) and deploys at subscription scope via
 parameter files:
 
 - [infra/main.bicepparam](infra/main.bicepparam) — committed to git.
-  `buildJobImageTag`/`serveAppImageTag` are placeholder values here (they're
-  required params with no default in `main.bicep`), so this file alone
-  isn't meant to be deployed with for real.
+  `buildJobImageTag`/`serveAppImageTag` are deliberately left unassigned
+  here (they're required params with no default in `main.bicep`)
 - `infra/main.local.bicepparam` — gitignored (matches the
   `*.local.bicepparam` pattern in [.gitignore](.gitignore)), used for real
   deployments. It's a standalone parameter file (`using './main.bicep'`,
