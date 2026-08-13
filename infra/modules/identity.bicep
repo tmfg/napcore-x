@@ -1,7 +1,4 @@
-// User-assigned managed identity, created as its own step so the caller can
-// grant it roles (e.g. AcrPull) *before* creating any resource that uses it
-// to pull an image - otherwise that resource can start running before the
-// role assignment exists/propagates. Deployed at resource group scope.
+// User-assigned managed identity, Deployed at resource group scope.
 @description('Azure region.')
 param location string
 

@@ -1,6 +1,5 @@
 // Grants a principal (typically a managed identity) a role on an existing
-// ACR. Used to give the build job's managed identity AcrPull without
-// re-enabling the ACR admin user. Deployed at resource group scope.
+// ACR. Used to give AcrPull to build/serve jobs. Deployed at resource group scope.
 
 @description('Name of the existing ACR to grant access to.')
 param acrName string

@@ -1,28 +1,10 @@
-// Azure Front Door (Standard) + WAF policy in front of the otp-serve App
-// Service. Deployed at resource group scope (called from main.bicep).
+// Azure Front Door  + WAF policy in front of the otp-serve App Service.
+// Deployed at resource group scope
 //
 // The origin is referenced by its predictable *.azurewebsites.net hostname
-// (computed from the app name in main.bicep), NOT via the serve-app
-// module's own output - this avoids a circular dependency: the serve app's
-// Access Restrictions need this module's frontDoorId output to only allow
-// Front Door traffic through, so the serve-app module depends on this one,
-// not the other way around.
+// (computed from the app name in main.bicep), NOT via the serve-app modules input. This is to avoid circular dependency.
 //
-// WAF policy starts in Detection mode (logs matches, doesn't block) per
-// plan - flip wafMode to 'Prevention' once logs have been reviewed for
-// false positives against real OTP traffic.
-//
-// Front Door Standard (not Premium) - no Bot Manager rules, no Private
-// Link to the origin needed per plan (origin stays public, locked down
-// via the X-Azure-FDID header check instead).
-//
-// IMPORTANT: Front Door Standard's WAF does NOT support managed rule sets
-// (Default Rule Set/OWASP protections, Bot Manager) at all - that's a
-// Premium-only capability, confirmed 2026-08-12 after a deployment error
-// ("...does not support ManagedRules"). Standard's WAF is limited to
-// custom rules only. A baseline rate-limiting custom rule is included
-// below; add more custom rules (IP/geo blocking, header/query matching)
-// as needed - there's no signature-based attack detection on this tier.
+// With Front Door Standard managed rules for WAF are not supported. Only some basic custom rules are implemented
 
 @description('Name of the Front Door profile.')
 param profileName string
@@ -36,7 +18,7 @@ param wafPolicyName string
 @description('Hostname of the origin (the serve app), e.g. app-x-y.azurewebsites.net.')
 param originHostName string
 
-@description('WAF policy mode. Start in Detection, switch to Prevention once logs have been reviewed.')
+@description('WAF policy mode')
 @allowed([
   'Detection'
   'Prevention'
@@ -66,8 +48,7 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
       enabledState: 'Enabled'
       mode: wafMode
     }
-    // No managedRules block: Front Door Standard's WAF doesn't support
-    // managed rule sets (see note above) - only customRules are allowed.
+    // No managedRules block: Front Door Standard's WAF doesn't support it. Only customRules are allowed.
     customRules: {
       rules: [
         {
@@ -111,9 +92,7 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
           action: 'Block'
         }
         {
-          // Size constraint: reject abnormally long request URIs (crude
-          // mitigation for buffer/log-flooding and some injection attempts,
-          // not a substitute for the managed rule sets Standard can't use).
+          // Size constraint: reject abnormally long request URIs
           name: 'BlockOversizedUri'
           priority: 120
           enabledState: 'Enabled'
@@ -147,9 +126,7 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
           action: 'Block'
         }
         {
-          // Best-effort blocklist of common scanner/attack-tool user
-          // agents - a rough substitute for Bot Manager, which isn't
-          // available on Front Door Standard.
+          // Best-effort blocklist of common scanner/attack-tool user agents.
           name: 'BlockKnownBadUserAgents'
           priority: 140
           enabledState: 'Enabled'

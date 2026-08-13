@@ -1,5 +1,5 @@
-// Storage account + Azure Files share for OSM/GTFS input and the built OTP graph.
-// Deployed at resource group scope (called from main.bicep).
+// Storage account + Azure Files share for OSM/GTFS/NeTEx input and the built OTP graph.
+// Deployed at resource group scope
 
 @description('Name of the storage account. Must be globally unique, lowercase alphanumeric, 3-24 chars.')
 @minLength(3)

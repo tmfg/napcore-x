@@ -1,6 +1,5 @@
-// Serves graph.obj via the otp-serve image on Azure App Service for
-// Containers (Linux). Deployed at resource group scope (called from
-// main.bicep).
+// Serve app
+// Runs otp-serve image on Azure App Service for Containers (Linux). Deployed at resource group scope
 //
 // Pulls from ACR via a user-assigned managed identity (see
 // modules/identity.bicep and modules/acr-role-assignment.bicep) - same
@@ -9,17 +8,7 @@
 // The origin is locked down to only accept traffic from Azure Front Door
 // (see modules/waf.bicep) via IP access-restriction default-deny plus the
 // AzureFrontDoor.Backend service tag AND a X-Azure-FDID header match
-// against this specific Front Door instance - the service tag alone isn't
-// enough since Front Door's IP ranges are shared across all Azure
-// customers. This is done via App Service Access Restrictions, NOT
-// publicNetworkAccess/Private Endpoint - that would require upgrading off
-// the Basic plan to Premium + a VNet.
-//
-// TODO: the Azure Storage Mount below gives the app read-write access to
-// the whole share (App Service's classic storage-mounts feature has no
-// read-only option), even though it only needs to read output/graph/.
-// Revisit with a separate share/storage account for graph output if
-// tighter isolation is needed.
+// against this specific Front Door instance
 
 @description('Name of the web app. Must be globally unique (becomes <name>.azurewebsites.net).')
 param name string
@@ -99,8 +88,6 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
       acrUseManagedIdentityCreds: true
       acrUserManagedIdentityID: identityClientId
       minTlsVersion: '1.2'
-      // No FTP deployment is used (image comes from ACR) - disable an
-      // otherwise-open, unused attack surface.
       ftpsState: 'Disabled'
       // Only Azure Front Door traffic for this specific profile is let
       // through; everything else is denied. SCM/Kudu stays fully
@@ -137,6 +124,8 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
   }
 }
 
+// TODO: Azure Storage Mount  gives the app read-write access to
+// the whole share (no read-only option). Fix if needed, for example use separate share for the otp graph
 resource storageMounts 'Microsoft.Web/sites/config@2024-11-01' = {
   parent: webApp
   name: 'azurestorageaccounts'

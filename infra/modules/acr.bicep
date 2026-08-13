@@ -1,5 +1,5 @@
 // Azure Container Registry for otp-build / otp-serve images.
-// Deployed at resource group scope (called from main.bicep).
+// Deployed at resource group scope
 
 @description('Name of the container registry. Must be globally unique, alphanumeric only.')
 param name string
@@ -17,13 +17,8 @@ resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
     name: 'Basic'
   }
   properties: {
-    // Admin user disabled: prefer Azure AD identity (`az acr login`) or
-    // managed identity + role assignments (AcrPush/AcrPull) over shared
-    // admin credentials.
     adminUserEnabled: false
-    // TODO: revisit once build/serve compute (Container Apps/App Service) exists.
-    // Disabling public access requires Premium SKU + a private endpoint (VNet),
-    // which isn't set up yet. Decided to keep public access for now (2026-07-30).
+    // TODO: public access enabled for now
     publicNetworkAccess: 'Enabled'
     dataEndpointEnabled: false
     encryption: {
@@ -31,11 +26,8 @@ resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
       status: 'disabled'
     }
     networkRuleBypassAllowedForTasks: false
-    // TODO: consider switching to 'AbacRepositoryPermissions' later - it
-    // stops Owner/Contributor from getting implicit registry-wide push/pull
-    // (least-privilege) and allows per-repository scoped role assignments.
-    // One-way, registry-wide change - would need any implicit-access
-    // tooling/scripts updated to use explicit AcrPush/AcrPull first.
+    // legacy permissions give push/pull to Owner/Contributor but does not allow scoping access by registry
+    // switch to 'AbacRepositoryPermissions' to scope access for least privilege
     roleAssignmentMode: 'LegacyRegistryPermissions'
   }
 }

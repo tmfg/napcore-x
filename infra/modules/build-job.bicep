@@ -1,20 +1,6 @@
 // Runs the otp-build image once in Azure Container Instances (ACI), reading
-// OSM/GTFS from the "input/" directory of the Azure Files share and writing
-// graph.obj to "output/graph/" (mirrors the local-test/output/graph/ layout
-// used for local podman runs). Deployed at resource group scope (called
-// from main.bicep).
-//
-// Chose ACI over a Container Apps Job: it's a genuine one-off run (no
-// recurring schedule yet), and avoids standing up a Container Apps
-// Environment + Log Analytics workspace just for this. Revisit if/when
-// scheduling or event triggers are needed.
-//
-// Pulls from ACR via a user-assigned managed identity (no admin user/shared
-// credentials) - the caller must create that identity and grant it AcrPull
-// on the registry *before* this module runs, see modules/identity.bicep and
-// modules/acr-role-assignment.bicep. (The identity is created separately,
-// not in this module, so the role assignment can complete before this
-// container group is created and starts pulling the image.)
+// datOSM/GTFS/NeTEx from the "input/" directory of the Azure Files share and writing
+// graph.obj to "output/graph/"  Deployed at resource group scope
 
 @description('Azure region.')
 param location string
@@ -113,16 +99,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
         }
       }
     ]
-    // The same share is mounted twice (once read-only, once read-write)
-    // since ACI's azureFile volume always mounts the whole share, not a
-    // subdirectory - this keeps input/ read-only and output/graph/ writable.
-    // TODO: revisit - mounting the same share twice under different
-    // permissions is only enforced at the ACI mount level, not by the
-    // storage account itself, so a container process could still open the
-    // "read-only" mount's underlying share for writes via the read-write
-    // mount path. Consider separate file shares (or storage accounts) for
-    // input/ vs output/graph/, or moving input data handling to blob
-    // storage with scoped SAS tokens, for real isolation.
+    // Input path mounted as read-only, output as read-write. Actually both are the same file share, so this gives full read-write to input data also. TODO: separate these if needed
     volumes: [
       {
         name: 'otp-data-ro'
