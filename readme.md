@@ -79,6 +79,21 @@ Override any of `main.bicepparam`'s shared values here too if a particular deplo
 
 Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-images.sh) output, e.g. `2.8.1-1234abc`.
 
+### Resources
+
+- Container Registry (ACR): stores the otp-build and otp-serve Docker images.
+- Storage Account + Azure Files share (otp-data): holds input data (OSM/GTFS/NeTEx files) and the built OTP graph output.
+- Container Instance (ACI) "build job": one-off container that builds the OTP graph from input data.
+- App Service (Linux, Web App for Containers): runs the otp-serve container, serving the routing API.
+- Azure Front Door + WAF policy: public entry point in front of the App Service.
+
+### Data flow
+
+- OTP Docker images (otp-build, otp-serve) are built and pushed to ACR via build-and-push-images.sh.
+- Input files (OSM extract, GTFS and NeTEx) are uploaded to the otp-data file share's input/ directory.
+- The build job container reads the input files, builds an OTP graph, and writes it to the output/ directory on the same file share.
+- The serve app mounts the file share, loads the graph, and serves routing requests through Front Door.
+
 ### Deploy instructions
 
 There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 5.
