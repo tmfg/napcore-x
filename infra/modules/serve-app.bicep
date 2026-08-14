@@ -1,13 +1,9 @@
 // Serve app
 // Runs otp-serve image on Azure App Service for Containers (Linux). Deployed at resource group scope
 //
-// Pulls from ACR via a user-assigned managed identity (see
-// modules/identity.bicep and modules/acr-role-assignment.bicep) - same
-// pattern as the build job, no admin credentials.
-//
 // The origin is locked down to only accept traffic from Azure Front Door
 // (see modules/waf.bicep) via IP access-restriction default-deny plus the
-// AzureFrontDoor.Backend service tag AND a X-Azure-FDID header match
+// AzureFrontDoor.Backend service tag AND a X-Azure-FDID header to match
 // against this specific Front Door instance
 
 @description('Name of the web app. Must be globally unique (becomes <name>.azurewebsites.net).')
@@ -93,10 +89,7 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       // Only Azure Front Door traffic for this specific profile is let
-      // through; everything else is denied. SCM/Kudu stays fully
-      // deny-all with no exceptions (deployment/debug surface, not part
-      // of app traffic). This keeps the app on the existing Basic plan
-      // (no VNet/Private Endpoint needed).
+      // through; everything else is denied
       ipSecurityRestrictionsDefaultAction: 'Deny'
       ipSecurityRestrictions: [
         {

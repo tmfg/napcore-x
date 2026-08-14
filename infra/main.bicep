@@ -1,5 +1,4 @@
-// Deploy at subscription scope so this template can create the resource group itself:
-//   az deployment sub create --location <region> --template-file infra/main.bicep --parameters infra/main.bicepparam
+// Main bicep file, should be deployed at subscription scope. Deploys a new resource group and all resources
 
 targetScope = 'subscription'
 
@@ -20,7 +19,7 @@ param fileShareQuotaGB int = 100
 @description('If true, only deploy the base resources (resource group, ACR, storage) and skip others. Use this for deploying into empty subscription')
 param deployBaseOnly bool = false
 
-@description('Tag of the otp-build image to run for the graph build job, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh).')
+@description('Tag of the otp-build image to run for the graph build job, e.g. 2.8.1-abc1234')
 @minLength(1)
 param buildJobImageTag string
 
@@ -36,7 +35,7 @@ param buildJobCpuCores int = 4
 @description('Memory (GiB) for the build container.')
 param buildJobMemoryInGB int = 12
 
-@description('Tag of the otp-serve image to run, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh). Usually the same tag as buildJobImageTag, since both images are built/pushed together.')
+@description('Tag of the otp-serve image to run, e.g. 2.8.1-abc1234.')
 @minLength(1)
 param serveAppImageTag string
 

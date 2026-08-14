@@ -1,5 +1,5 @@
 // Runs the otp-build image once in Azure Container Instances (ACI), reading
-// datOSM/GTFS/NeTEx from the "input/" directory of the Azure Files share and writing
+// OSM/GTFS/NeTEx data from the "input/" directory of the Azure Files share and writing
 // graph.obj to "output/graph/"  Deployed at resource group scope
 
 @description('Azure region.')

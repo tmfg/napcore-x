@@ -45,7 +45,6 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2025-0
   name: 'otp-data'
   properties: {
     shareQuota: fileShareQuotaGB
-    // Explicit default access tier for a share in a general-purpose v2 account.
     accessTier: 'TransactionOptimized'
   }
 }

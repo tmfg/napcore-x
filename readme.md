@@ -2,9 +2,9 @@
 
 ## Install requirements
 
-Azure CLI and Bicep for deployment.
+Azure CLI and Bicep are needed for deployment.
 
-Docker or Podman for running containers locally.
+Docker or Podman is needed for running containers locally.
 
 ## Local testing (build + serve images)
 
@@ -112,7 +112,7 @@ Need to login to az CLI for all of these:
 
 #### 1. Create the base deployment
 
-Only needed on an empty subscription, before any images exist in ACR. Deploys just the resource group, ACR, and storage account/file share by setting `deployBaseOnly = true` (add this to `infra/main.local.bicepparam`, or pass it inline)
+Only needed on an empty subscription, before any resources exist. Deploys just the resource group, ACR, and storage account/file share by setting `deployBaseOnly = true` (add this to `infra/main.local.bicepparam`, or pass it inline)
 
 Check what is being created:
 
@@ -135,7 +135,7 @@ TODO: current method is to use web portal to add data packages to the file share
 
 GTFS/NeTEx data under /input/transit and OSM data under /input/osm
 
-The filenames of the packages need to be in bicep params. TODO: only one file per type supported from now
+The filenames of the packages need to be in bicep params. TODO: only one file per type supported for now
 
 #### 4. Update container images in container registry
 
@@ -143,7 +143,7 @@ Whenever changes are made to the container images (otp-build, otp-serve), new im
 
 Build and push images. This will use your Azure credentials to push to ACR, so need access. By default it will be given to Owner/Contributor of the ACR.
 
-> ACR_NAME=<acr-name>./scripts/build-and-push-images.sh
+> ACR_NAME="acr-name" ./scripts/build-and-push-images.sh
 
 Note: if ACR_NAME is not given, it defaults to the dev default name acrnapcorexdemotest
 

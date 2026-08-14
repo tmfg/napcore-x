@@ -1,4 +1,4 @@
-// Azure Front Door  + WAF policy in front of the otp-serve App Service.
+// Azure Front Door + WAF policy in front of the otp-serve App Service.
 // Deployed at resource group scope
 //
 // The origin is referenced by its predictable *.azurewebsites.net hostname
@@ -48,7 +48,6 @@ resource wafPolicy 'Microsoft.Network/frontdoorWebApplicationFirewallPolicies@20
       enabledState: 'Enabled'
       mode: wafMode
     }
-    // No managedRules block: Front Door Standard's WAF doesn't support it. Only customRules are allowed.
     customRules: {
       rules: [
         {
