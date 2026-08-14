@@ -69,6 +69,7 @@ Some default parameters are defined in [infra/main.bicepparam](infra/main.bicepp
 using './main.bicep'
 extends './main.bicepparam'
 
+param environmentName = 'dev'
 param buildJobImageTag = '<otp-version>-<git-sha>'
 param serveAppImageTag = '<otp-version>-<git-sha>'
 param osmFileName = '<osm-file>.pbf'
@@ -101,17 +102,31 @@ Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-i
 
 ### Deploy instructions
 
-There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 5.
+There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 4.
 
-TODO: describe what to do if only data changes, or only OTP images need to be updated.
+If only input data changes, start from step 3. In this case it is not necessary to do a full deployment: you can also manually trigger the build job and restart the serve app.
+
+Need to login to az CLI for all of these:
+
+> az login
 
 #### 1. Create the base deployment
 
-TODO: flag to create partial base deployment
+Only needed on an empty subscription, before any images exist in ACR. Deploys just the resource group, ACR, and storage account/file share by setting `deployBaseOnly = true` (add this to `infra/main.local.bicepparam`, or pass it inline)
+
+Check what is being created:
+
+> az deployment sub what-if --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --parameters deployBaseOnly=true
+
+Deploy:
+
+> az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --parameters deployBaseOnly=true --name napcorexdemo-$(date +%Y%m%d%H%M)
+
+`buildJobImageTag`/`serveAppImageTag`/`osmFileName`/`gtfsFileName` still need some value in `infra/main.local.bicepparam` even though they're unused for a base-only deploy.
 
 #### 2. Create the necessary file share directories
 
-Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /output, /output/graph
+Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /input/transit, /input/osm, /output, /output/graph
 TODO: cli method was not working before so I used the web portal
 
 #### 3. Upload OTP input data
@@ -120,19 +135,17 @@ TODO: current method is to use web portal to add data packages to the file share
 
 GTFS/NeTEx data under /input/transit and OSM data under /input/osm
 
-The filenames of the packages need to be in pp params. TODO: only one file per type supported from now
+The filenames of the packages need to be in bicep params. TODO: only one file per type supported from now
 
 #### 4. Update container images in container registry
 
 Whenever changes are made to the container images (otp-build, otp-serve), new images need to be created and pushed to AZ.
 
-Login to Azure CLI:
-
-> az login
-
 Build and push images. This will use your Azure credentials to push to ACR, so need access. By default it will be given to Owner/Contributor of the ACR.
 
-> ./scripts/build-and-push-images.sh
+> ACR_NAME=<acr-name>./scripts/build-and-push-images.sh
+
+Note: if ACR_NAME is not given, it defaults to the dev default name acrnapcorexdemotest
 
 The script will output the new image tags, which will need to be updated to `infra/main.local.bicepparam`. The tag contains current git commit hash, as well as -dirty suffix if there are unstaged changes.
 
@@ -148,7 +161,13 @@ Deploy:
 
 NOTE: on a fresh deployment there could be permission problems if the User Managed Identity permissions propagate too slowly. If that happens, try again.
 
-When a new deployment is made, the OTP build script will run and the serve app will start serving the graph. TODO: a better way to generate graph when only data changes?
+When a new deployment is made, the OTP build script will run and the serve app will start serving the graph.
+
+#### 6. Restart the serve app after the build job finishes
+
+The build job can take several minutes, depending on data size.
+
+The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
 
 ## Run OTP from jar
 

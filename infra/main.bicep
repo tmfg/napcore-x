@@ -17,6 +17,9 @@ param location string = 'swedencentral'
 @description('Quota (in GiB) for the Azure Files share.')
 param fileShareQuotaGB int = 100
 
+@description('If true, only deploy the base resources (resource group, ACR, storage) and skip others. Use this for deploying into empty subscription')
+param deployBaseOnly bool = false
+
 @description('Tag of the otp-build image to run for the graph build job, e.g. 2.8.1-abc1234 (see scripts/build-and-push-images.sh).')
 @minLength(1)
 param buildJobImageTag string
@@ -98,7 +101,7 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
-module buildJobIdentity 'modules/identity.bicep' = {
+module buildJobIdentity 'modules/identity.bicep' = if (!deployBaseOnly) {
   name: 'build-job-identity-deploy'
   scope: rg
   params: {
@@ -108,23 +111,23 @@ module buildJobIdentity 'modules/identity.bicep' = {
   }
 }
 
-module buildJobAcrAccess 'modules/acr-role-assignment.bicep' = {
+module buildJobAcrAccess 'modules/acr-role-assignment.bicep' = if (!deployBaseOnly) {
   name: 'build-job-acr-access-deploy'
   scope: rg
   params: {
     acrName: acr.outputs.name
-    principalId: buildJobIdentity.outputs.principalId
+    principalId: buildJobIdentity.?outputs.principalId ?? ''
   }
 }
 
-module buildJob 'modules/build-job.bicep' = {
+module buildJob 'modules/build-job.bicep' = if (!deployBaseOnly) {
   name: 'build-job-deploy'
   scope: rg
   params: {
     location: location
     acrLoginServer: acr.outputs.loginServer
     imageTag: buildJobImageTag
-    identityResourceId: buildJobIdentity.outputs.id
+    identityResourceId: buildJobIdentity.?outputs.id ?? ''
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
     osmFileName: osmFileName
@@ -138,7 +141,7 @@ module buildJob 'modules/build-job.bicep' = {
   ]
 }
 
-module serveAppIdentity 'modules/identity.bicep' = {
+module serveAppIdentity 'modules/identity.bicep' = if (!deployBaseOnly) {
   name: 'serve-app-identity-deploy'
   scope: rg
   params: {
@@ -148,16 +151,16 @@ module serveAppIdentity 'modules/identity.bicep' = {
   }
 }
 
-module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = {
+module serveAppAcrAccess 'modules/acr-role-assignment.bicep' = if (!deployBaseOnly) {
   name: 'serve-app-acr-access-deploy'
   scope: rg
   params: {
     acrName: acr.outputs.name
-    principalId: serveAppIdentity.outputs.principalId
+    principalId: serveAppIdentity.?outputs.principalId ?? ''
   }
 }
 
-module waf 'modules/waf.bicep' = {
+module waf 'modules/waf.bicep' = if (!deployBaseOnly) {
   name: 'waf-deploy'
   scope: rg
   params: {
@@ -171,7 +174,7 @@ module waf 'modules/waf.bicep' = {
   }
 }
 
-module serveApp 'modules/serve-app.bicep' = {
+module serveApp 'modules/serve-app.bicep' = if (!deployBaseOnly) {
   name: 'serve-app-deploy'
   scope: rg
   params: {
@@ -180,11 +183,11 @@ module serveApp 'modules/serve-app.bicep' = {
     location: location
     acrLoginServer: acr.outputs.loginServer
     imageTag: serveAppImageTag
-    identityResourceId: serveAppIdentity.outputs.id
-    identityClientId: serveAppIdentity.outputs.clientId
+    identityResourceId: serveAppIdentity.?outputs.id ?? ''
+    identityClientId: serveAppIdentity.?outputs.clientId ?? ''
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
-    frontDoorId: waf.outputs.frontDoorId
+    frontDoorId: waf.?outputs.frontDoorId ?? ''
     logsStorageAccountId: storage.outputs.id
     planSkuName: serveAppPlanSkuName
     planSkuTier: serveAppPlanSkuTier
@@ -200,8 +203,8 @@ output acrName string = acr.outputs.name
 output acrLoginServer string = acr.outputs.loginServer
 output storageAccountName string = storage.outputs.name
 output fileShareName string = storage.outputs.fileShareName
-output buildJobContainerGroupName string = buildJob.outputs.containerGroupName
-output serveAppName string = serveApp.outputs.name
-output serveAppHostName string = serveApp.outputs.defaultHostName
-output frontDoorEndpointHostName string = waf.outputs.endpointHostName
-output frontDoorId string = waf.outputs.frontDoorId
+output buildJobContainerGroupName string = buildJob.?outputs.containerGroupName ?? ''
+output serveAppName string = serveApp.?outputs.name ?? ''
+output serveAppHostName string = serveApp.?outputs.defaultHostName ?? ''
+output frontDoorEndpointHostName string = waf.?outputs.endpointHostName ?? ''
+output frontDoorId string = waf.?outputs.frontDoorId ?? ''
