@@ -94,28 +94,13 @@ Data files for local testing will be located in local-test directory.
 
 ### Run the builder image with GTFS + NeTEx
 
-> podman run --rm \\
-> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
->  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
-> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
-> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
-> -e INPUT_NETEX_PATH=/mnt/input/transit/\<netex-feed\>.zip \\
-> -e OUTPUT_GRAPH_DIR=/mnt/output \\
-> otp-build
-
-### Run the builder image with a single feed only
-
-NOTE: NeTEx data does not work yet, so use GTFS data only for testing.
-
-INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
-
-> podman run --rm \\
-> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
->  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
-> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
-> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
-> -e OUTPUT_GRAPH_DIR=/mnt/output \\
-> otp-build
+> podman run --rm \
+>  -v "$(pwd)/local-test/input:/mnt/input:ro" \
+>  -v "$(pwd)/local-test/output/graph:/mnt/output" \
+>  -e INPUT_OSM_DIR=/mnt/input/osm \
+>  -e INPUT_TRANSIT_DIR=/mnt/input/transit \
+>  -e OUTPUT_GRAPH_DIR=/mnt/output \
+>  otp-build
 
 ### Build the serve image
 
