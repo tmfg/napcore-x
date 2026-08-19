@@ -2,18 +2,15 @@
   "osm": [
     {
       "source": "file:///var/opentripplanner/data/osm/estonia.pbf"
+    }, 
+    {
+      "source": "file:///var/opentripplanner/data/osm/finland.pbf"
     }
   ],
-  "transitFeeds": [
-    {
-      "type": "gtfs",
-      "feedId": "ES",
-      "source": "file:///opt/otp-data/transit/napcorexgtfs.zip"
-    },
-    {
-      "type": "netex",
-      "feedId": "FI",
-      "source": "file:///opt/otp-data/transit/Napcorex.zip"
-    }
-  ]
+  "transitFeeds": [],
+  "netexDefaults": {
+    "sharedFilePattern": "^_(?:shared_data|stops)\\.xml$",
+    "sharedGroupFilePattern": "^([^_]+)_shared_data\\.xml$",
+    "groupFilePattern": "^(line)_\\d+\\.xml$"
+  }
 }

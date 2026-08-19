@@ -1,4 +1,4 @@
-FROM docker.io/opentripplanner/opentripplanner:2.8.1
+FROM docker.io/opentripplanner/opentripplanner:2.9.0
 
 WORKDIR /var/opentripplanner
 
