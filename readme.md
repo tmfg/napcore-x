@@ -1,75 +1,12 @@
-# Ohjeet kontin ulkopuolella ajoon
+# Napcore x demo
 
-### Opentripplanner jar-file:
+## Install requirements
 
-OpenTripPlanner jar-file: [OTP-jar](https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/)
+Azure CLI and Bicep are needed for deployment.
 
-Jar-tiedosto lisätään projektin kantaan jonka jälkeen opentripplanner käynnistetään alla olevilla komennoilla.
+Docker or Podman is needed for running containers locally.
 
-## OpenTripPlanner / Terminaalista ajo
-
-OTP docs: [OpenTripPlanner](https://docs.opentripplanner.org/en/latest/Basic-Tutorial/)
-
-### simple-step-server:
-
-> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --serve .'
-
-serveri aukeaa: http://localhost:8080/
-
-### Graafin tallennus ja valmiista graafista käynnistys:
-
-#### Graafin tallennus:
-
-> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --save .'
-
-#### Valmiista graafista käynnistys:
-
-> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
-
-# Useful tools
-
-## NeTEx
-
-NeTEx data tools: [Netex](https://data4pt.org/w/index.php/NeTEX)
-
-## GTFS
-
-GTFS data visualization tool: [GTFS](https://app.transit-lens.com/)
-
-## OSM
-
-#### OSM:
-
-OpenStreetMap: [OSM](https://www.openstreetmap.org/#map=8/59.115/25.009&layers=D)
---> Yläkulman "navigointi -> export" saa ladattua alueen. Tämä vain pienille alueille (yksittäiset kaupungit)
-
-Suuremmat alueet: [Suuret OSM](https://download.geofabrik.de/europe.html)
-Geofabrikista voi ladata suuremman alueen (esim. Viro) ja tätä aluetta voidaan konvertoida pienemmäksi osmconvert toolilla.
-
-#### osmconvert:
-
-> 'sudo apt install osmctools'
-> 'osmconvert <originalOSM.osm.pbf> -b=<Bounding tool coordinates> --complete-ways -o=<konvertoituOSM>.pbf'
-
-#### OSM Bounding tool:
-
-OSM rajaustyökalu: [Bounding tool](https://boundingbox.klokantech.com/)
-
-Vasemmalta alakulmasta CSV-formaatti tarjoaa valmiiksi oikean muodon osmconvert komennossa käytettävälle parametrille.
-
-# Data
-
-Käytetään Jaakon tarjoamia URL-linkkejä datan saavuttamiseksi. Kontti noutaa tällä hetkellä datan ja tallentaa sen kontin sisälle. Build-config.json on määritelty keräämään data kontin sisältä (Dockerfile).
-
-Zip paketit ovat olleet ladattuna ja sijoitettuna lokaaliin ympäristöön GTFS, OSM ja NeTEx kansioihin testausta varten
-
-# Containers
-
-There are two container images: builder and server (TODO: clarify naming).
-
-The builder image will build the OTP graph, and server will use the graph to serve OTP and UI.
-
-# Local testing (build + serve images)
+## Local testing (build + serve images)
 
 These commands test the split build/serve container workflow locally. Replace
 the placeholder file names below with your own downloaded files.
@@ -103,19 +40,9 @@ Data files for local testing will be located in local-test directory.
 > -e OUTPUT_GRAPH_DIR=/mnt/output \\
 > otp-build
 
-### Run the builder image with a single feed only
-
-NOTE: NeTEx data does not work yet, so use GTFS data only for testing.
+NOTE: Can run with either netex, gtfs or both.
 
 INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
-
-> podman run --rm \\
-> -v "$(pwd)/local-test/input:/mnt/input:ro" \\
->  -v "$(pwd)/local-test/output/graph:/mnt/output" \\
-> -e INPUT_OSM_PATH=/mnt/input/osm/\<osm-extract\>.pbf \\
-> -e INPUT_GTFS_PATH=/mnt/input/transit/\<gtfs-feed\>.zip \\
-> -e OUTPUT_GRAPH_DIR=/mnt/output \\
-> otp-build
 
 ### Build the serve image
 
@@ -130,86 +57,171 @@ INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be
 
 Open http://localhost:8080/ once the server has started.
 
-# Mahdollisia Azure ratkaisuja
+## Azure infra deployment (Bicep)
 
-### Azure container service
+Infra lives in [infra/](infra/) and deploys at subscription scope via [infra/main.bicep](infra/main.bicep) (creates its own resource group).
 
-Tässä mallissa OTP ajetaan Azure Container Instances -palvelussa.
-Dataesikäsittely, graafin rakentaminen ja itse OTP-palvelu voidaan toteuttaa erillisinä kontteina.
-Kaikki pysyvä data säilytetään Azure Filesissa.
+Some default parameters are defined in [infra/main.bicepparam](infra/main.bicepparam) but it does not contain all of the parameters and can't be used directly for deployment. Parameters for image tags, input filenames, secrets (none currently) should not be committed to git but instead defined in `infra/main.local.bicepparam`.
 
-GTFS / OSM Sources
-│
-▼
-Preprocessing Container
-│
-▼
-Azure Files
-│
-▼
-Build Container
-│
-▼
-Azure Files
-│
-▼
-OTP Serve Container
-│
-▼
-Users
+`infra/main.local.bicepparam` template:
 
-### Haitat
+```
+using './main.bicep'
+extends './main.bicepparam'
 
-ACI ei tarjoa valmiina:
+param environmentName = 'dev'
+param buildJobImageTag = '<otp-version>-<git-sha>'
+param serveAppImageTag = '<otp-version>-<git-sha>'
+param osmFileName = '<osm-file>.pbf'
+param gtfsFileName = '<gtfs-file>.zip'
+```
 
-- autoskaalausta
-- deployment sloteja
-- load balancingia
-- custom domain -hallintaa
+Override any of `main.bicepparam`'s shared values here too if a particular deploy needs something different.
 
-Nämä täytyy toteuttaa erikseen esimerkiksi:
+Image tags come from [scripts/build-and-push-images.sh](scripts/build-and-push-images.sh) output, e.g. `2.8.1-1234abc`.
 
-- Azure Front Door
-- Application Gateway
-- Azure DNS
+### Resources
 
-### Suositeltu käyttötapa
+- Container Registry (ACR): stores the otp-build and otp-serve Docker images.
+- Storage Account + Azure Files share (otp-data): holds input data (OSM/GTFS/NeTEx files) and the built OTP graph output.
+- Container Instance (ACI) "build job": one-off container that builds the OTP graph from input data.
+- App Service (Linux, Web App for Containers): runs the otp-serve container, serving the routing API.
+- Azure Front Door + WAF policy: public entry point in front of the App Service.
 
-#### Soveltuu tilanteisiin joissa:
+### Data flow
 
-- käyttäjämäärä on pieni tai keskisuuri
-- kustannukset halutaan minimoida
-- graphien rakentaminen on merkittävä osa järjestelmää
-- infrastruktuurin halutaan olevan mahdollisimman yksinkertainen
+- OTP Docker images (otp-build, otp-serve) are built and pushed to ACR via build-and-push-images.sh.
+- Input files (OSM extract, GTFS and NeTEx) are uploaded to the otp-data file share's input/ directory.
+- The build job container reads the input files, builds an OTP graph, and writes it to the output/ directory on the same file share.
+- The serve app mounts the file share, loads the graph, and serves routing requests through Front Door.
 
-### Azure app services
+### Logging / monitoring
 
-Suositellaan jatkuasti käynnissä oleville web-palveluille
+- Front Door/WAF access, health probe, and WAF logs, and App Service HTTP/console/platform logs are sent to the storage account (`insights-logs-*` blob containers).
+- Logs older than 30 days are automatically deleted.
 
-Tässä mallissa OpenTripPlanner (OTP) toimii jatkuvasti käynnissä olevana web-palveluna Azure App Servicessä. Reititysgraafin (graph.obj) rakentaminen on erotettu omaksi pipeline-vaiheekseen.
+### Deploy instructions
 
-OTP-kontin vastuulla on ainoastaan valmiin graafin lataaminen ja API/UI:n tarjoaminen käyttäjille.
+There are some additional steps when deploying to an empty subscription. If deploying to an empty subscription, start from step 1. If updating an existing deployment, skip to step 4.
 
-Azure files prosessoitujen tiedostojen tallentamiseen: [Azure files](https://learn.microsoft.com/en-us/azure/storage/files/storage-files-introduction)
+If only input data changes, start from step 3. In this case it is not necessary to do a full deployment: you can also manually trigger the build job and restart the serve app.
 
-GTFS / OSM Sources
-│
-▼
-Build Pipeline
-│
-├─ Download data
-├─ Preprocess data
-├─ Build graph.obj
-│
-▼
-Azure Files
-│
-▼
-Azure App Service
+Need to login to az CLI for all of these:
 
-##### Soveltuu tilanteisiin joissa:
+> az login
 
-- OTP on jatkuvasti käytössä
-- käyttäjiä on paljon
-- palvelun saatavuus on tärkeää
-- halutaan minimoida ylläpitotyö
+#### 1. Create the base deployment
+
+Only needed on an empty subscription, before any resources exist. Deploys just the resource group, ACR, and storage account/file share by setting `deployBaseOnly = true` (add this to `infra/main.local.bicepparam`, or pass it inline)
+
+Check what is being created:
+
+> az deployment sub what-if --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --parameters deployBaseOnly=true
+
+Deploy:
+
+> az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --parameters deployBaseOnly=true --name napcorexdemo-$(date +%Y%m%d%H%M)
+
+`buildJobImageTag`/`serveAppImageTag`/`osmFileName`/`gtfsFileName` still need some value in `infra/main.local.bicepparam` even though they're unused for a base-only deploy.
+
+#### 2. Create the necessary file share directories
+
+Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /input/transit, /input/osm, /output, /output/graph
+TODO: cli method was not working before so I used the web portal
+
+#### 3. Upload OTP input data
+
+TODO: current method is to use web portal to add data packages to the file share `otp-data`.
+
+GTFS/NeTEx data under /input/transit and OSM data under /input/osm
+
+The filenames of the packages need to be in bicep params. TODO: only one file per type supported for now
+
+#### 4. Update container images in container registry
+
+Whenever changes are made to the container images (otp-build, otp-serve), new images need to be created and pushed to AZ.
+
+Build and push images. This will use your Azure credentials to push to ACR, so need access. By default it will be given to Owner/Contributor of the ACR.
+
+> ACR_NAME="acr-name" ./scripts/build-and-push-images.sh
+
+Note: if ACR_NAME is not given, it defaults to the dev default name acrnapcorexdemotest
+
+The script will output the new image tags, which will need to be updated to `infra/main.local.bicepparam`. The tag contains current git commit hash, as well as -dirty suffix if there are unstaged changes.
+
+#### 5. Deploy all resources
+
+Preview changes:
+
+> az deployment sub what-if --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam
+
+Deploy:
+
+> az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --name napcorexdemo-$(date +%Y%m%d%H%M)
+
+NOTE: on a fresh deployment there could be permission problems if the User Managed Identity permissions propagate too slowly. If that happens, try again.
+
+When a new deployment is made, the OTP build script will run and the serve app will start serving the graph.
+
+#### 6. Restart the serve app after the build job finishes
+
+The build job can take several minutes, depending on data size.
+
+The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
+
+## Run OTP from jar
+
+### Opentripplanner jar-file:
+
+OpenTripPlanner jar-file: [OTP-jar](https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/)
+
+Jar-tiedosto lisätään projektin kantaan jonka jälkeen opentripplanner käynnistetään alla olevilla komennoilla.
+
+### OpenTripPlanner / Terminaalista ajo
+
+OTP docs: [OpenTripPlanner](https://docs.opentripplanner.org/en/latest/Basic-Tutorial/)
+
+### simple-step-server:
+
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --serve .'
+
+serveri aukeaa: http://localhost:8080/
+
+### Graafin tallennus ja valmiista graafista käynnistys:
+
+#### Graafin tallennus:
+
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --build --save .'
+
+#### Valmiista graafista käynnistys:
+
+> '$ java -Xmx4G -jar otp-shaded-2.8.1.jar --load .'
+
+## Useful tools
+
+### NeTEx
+
+NeTEx data tools: [Netex](https://data4pt.org/w/index.php/NeTEX)
+
+### GTFS
+
+GTFS data visualization tool: [GTFS](https://app.transit-lens.com/)
+
+### OSM
+
+OpenStreetMap: [OSM](https://www.openstreetmap.org/#map=8/59.115/25.009&layers=D)
+--> Yläkulman "navigointi -> export" saa ladattua alueen. Tämä vain pienille alueille (yksittäiset kaupungit)
+
+Suuremmat alueet: [Suuret OSM](https://download.geofabrik.de/europe.html)
+Geofabrikista voi ladata suuremman alueen (esim. Viro) ja tätä aluetta voidaan konvertoida pienemmäksi osmconvert toolilla.
+
+#### osmconvert:
+
+> 'sudo apt install osmctools'
+> 'osmconvert <originalOSM.osm.pbf> -b=<Bounding tool coordinates> --complete-ways -o=<konvertoituOSM>.pbf'
+
+#### OSM Bounding tool:
+
+OSM rajaustyökalu: [Bounding tool](https://boundingbox.klokantech.com/)
+
+Vasemmalta alakulmasta CSV-formaatti tarjoaa valmiiksi oikean muodon osmconvert komennossa käytettävälle parametrille.
