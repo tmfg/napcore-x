@@ -47,6 +47,11 @@ param planSkuName string = 'B3'
 @description('App Service Plan SKU tier, e.g. Basic.')
 param planSkuTier string = 'Basic'
 
+@description('Max seconds Azure gives the container to start listening before the startup probe fails. Azure Files graph copy + JVM/graph load can take several minutes. Max allowed is 1800.')
+@minValue(1)
+@maxValue(1800)
+param containerStartTimeLimitSeconds int = 900
+
 param tags object = {}
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' existing = {
@@ -114,6 +119,10 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'OTP_GRAPH_DIR'
           value: '/mnt/otp-data/output/graph'
+        }
+        {
+          name: 'WEBSITES_CONTAINER_START_TIME_LIMIT'
+          value: string(containerStartTimeLimitSeconds)
         }
       ]
     }
