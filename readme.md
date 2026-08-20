@@ -15,15 +15,15 @@ Data files for local testing will be located in local-test directory.
 
 ### Create local folders
 
-> mkdir -p local-test/input/osm local-test/input/transit local-test/output/graph
+> mkdir -p local-test/input/osm local-test/input/gtfs local-test/input/netex local-test/output/graph
 
 ### Download test data
 
 > curl -L "\<osm-extract-url\>" -o local-test/input/osm/\<osm-extract\>.pbf
 >
-> curl -L "\<gtfs-feed-url\>" -o local-test/input/transit/\<gtfs-feed\>.zip
+> curl -L "\<gtfs-feed-url\>" -o local-test/input/gtfs/\<gtfs-feed\>.zip
 >
-> curl -L "\<netex-feed-url\>" -o local-test/input/transit/\<netex-feed\>.zip
+> curl -L "\<netex-feed-url\>" -o local-test/input/netex/\<netex-feed\>.zip
 
 ### Build the builder image
 
@@ -35,13 +35,15 @@ Data files for local testing will be located in local-test directory.
 >  -v "$(pwd)/local-test/input:/mnt/input:ro" \
 >  -v "$(pwd)/local-test/output/graph:/mnt/output" \
 >  -e INPUT_OSM_DIR=/mnt/input/osm \
->  -e INPUT_TRANSIT_DIR=/mnt/input/transit \
+>  -e INPUT_GTFS_DIR=/mnt/input/gtfs \
+>  -e INPUT_NETEX_DIR=/mnt/input/netex \
 >  -e OUTPUT_GRAPH_DIR=/mnt/output \
 >  otp-build
 
-NOTE: Can run with either netex, gtfs or both.
-
-INPUT_GTFS_PATH and INPUT_NETEX_PATH are each optional, but at least one must be set.
+NOTE: Can run with any number of OSM, GTFS and/or NeTEx files - drop any
+matching files into the respective local-test/input/osm, .../gtfs or
+.../netex directory. INPUT_GTFS_DIR and INPUT_NETEX_DIR are each optional,
+but at least one GTFS or NeTEx file must be found overall.
 
 ### Build the serve image
 
@@ -71,8 +73,6 @@ extends './main.bicepparam'
 param environmentName = 'dev'
 param buildJobImageTag = '<otp-version>-<git-sha>'
 param serveAppImageTag = '<otp-version>-<git-sha>'
-param osmFileName = '<osm-file>.pbf'
-param gtfsFileName = '<gtfs-file>.zip'
 ```
 
 Override any of `main.bicepparam`'s shared values here too if a particular deploy needs something different.
@@ -121,20 +121,18 @@ Deploy:
 
 > az deployment sub create --location swedencentral --template-file infra/main.bicep --parameters infra/main.local.bicepparam --parameters deployBaseOnly=true --name napcorexdemo-$(date +%Y%m%d%H%M)
 
-`buildJobImageTag`/`serveAppImageTag`/`osmFileName`/`gtfsFileName` still need some value in `infra/main.local.bicepparam` even though they're unused for a base-only deploy.
+`buildJobImageTag`/`serveAppImageTag` still need some value in `infra/main.local.bicepparam` even though they're unused for a base-only deploy.
 
 #### 2. Create the necessary file share directories
 
-Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /input/transit, /input/osm, /output, /output/graph
+Create directories in the file share `otp-data` (defined in [infra/modules/storage.bicep](infra/modules/storage.bicep)): /input, /input/osm, /input/gtfs, /input/netex, /output, /output/graph
 TODO: cli method was not working before so I used the web portal
 
 #### 3. Upload OTP input data
 
 TODO: current method is to use web portal to add data packages to the file share `otp-data`.
 
-GTFS/NeTEx data under /input/transit and OSM data under /input/osm
-
-The filenames of the packages need to be in bicep params. TODO: only one file per type supported for now
+Any number of OSM files under /input/osm, GTFS files under /input/gtfs, and NeTEx files under /input/netex.
 
 #### 4. Update container images in container registry
 

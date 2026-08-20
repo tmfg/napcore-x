@@ -1,12 +1,5 @@
 {
-  "osm": [
-    {
-      "source": "file:///var/opentripplanner/data/osm/estonia.pbf"
-    }, 
-    {
-      "source": "file:///var/opentripplanner/data/osm/finland.pbf"
-    }
-  ],
+  "osm": [],
   "transitFeeds": [],
   "netexDefaults": {
     "sharedFilePattern": "^_(?:shared_data|stops)\\.xml$",

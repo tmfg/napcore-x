@@ -41,8 +41,8 @@ param frontDoorId string
 @description('Resource ID of the storage account to send App Service diagnostic logs to.')
 param logsStorageAccountId string
 
-@description('App Service Plan SKU name, e.g. B2.')
-param planSkuName string = 'B2'
+@description('App Service Plan SKU name, e.g. B3.')
+param planSkuName string = 'B3'
 
 @description('App Service Plan SKU tier, e.g. Basic.')
 param planSkuTier string = 'Basic'

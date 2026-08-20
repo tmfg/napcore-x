@@ -19,7 +19,8 @@ ACR_NAME="${1:-${ACR_NAME:-acrnapcorexdemodev}}"
 ACR_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
 
 # Pinned base image version, see src/build/Dockerfile and src/serve/Dockerfile.
-OTP_VERSION=2.8.1
+# TODO: update this when the base image is updated.
+OTP_VERSION=2.9.0
 
 GIT_SHA="$(git rev-parse --short HEAD)"
 if ! git diff --quiet || ! git diff --cached --quiet; then

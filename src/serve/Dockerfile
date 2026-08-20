@@ -2,7 +2,7 @@ FROM docker.io/opentripplanner/opentripplanner:2.9.0
 
 WORKDIR /var/opentripplanner
 
-ENV JAVA_OPTS="-Xmx2G"
+ENV JAVA_OPTS="-Xmx4G"
 
 COPY router-config.json /var/opentripplanner/router-config.json
 COPY otp-config.json /var/opentripplanner/otp-config.json

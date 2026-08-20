@@ -23,12 +23,6 @@ param deployBaseOnly bool = false
 @minLength(1)
 param buildJobImageTag string
 
-@description('Name of the OSM extract file under the share input/ directory.')
-param osmFileName string
-
-@description('Name of the GTFS feed file under the share input/ directory.')
-param gtfsFileName string
-
 @description('vCPU cores for the build container.')
 param buildJobCpuCores int = 4
 
@@ -40,7 +34,7 @@ param buildJobMemoryInGB int = 12
 param serveAppImageTag string
 
 @description('App Service Plan SKU name for the serve app.')
-param serveAppPlanSkuName string = 'B2'
+param serveAppPlanSkuName string = 'B3'
 
 @description('App Service Plan SKU tier for the serve app.')
 param serveAppPlanSkuTier string = 'Basic'
@@ -129,8 +123,6 @@ module buildJob 'modules/build-job.bicep' = if (!deployBaseOnly) {
     identityResourceId: buildJobIdentity.?outputs.id ?? ''
     storageAccountName: storage.outputs.name
     fileShareName: storage.outputs.fileShareName
-    osmFileName: osmFileName
-    gtfsFileName: gtfsFileName
     cpuCores: buildJobCpuCores
     memoryInGB: buildJobMemoryInGB
     tags: tags

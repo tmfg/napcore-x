@@ -21,12 +21,6 @@ param storageAccountName string
 @description('Name of the file share containing the input/ and output/graph/ directories.')
 param fileShareName string
 
-@description('Name of the OSM extract file under the share input/osm/ directory.')
-param osmFileName string
-
-@description('Name of the GTFS feed file under the share input/transit/ directory.')
-param gtfsFileName string
-
 @description('vCPU cores for the build container.')
 param cpuCores int = 4
 
@@ -72,12 +66,16 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01'
           }
           environmentVariables: [
             {
-              name: 'INPUT_OSM_PATH'
-              value: '/mnt/otp-input/input/osm/${osmFileName}'
+              name: 'INPUT_OSM_DIR'
+              value: '/mnt/otp-input/input/osm'
             }
             {
-              name: 'INPUT_GTFS_PATH'
-              value: '/mnt/otp-input/input/transit/${gtfsFileName}'
+              name: 'INPUT_GTFS_DIR'
+              value: '/mnt/otp-input/input/gtfs'
+            }
+            {
+              name: 'INPUT_NETEX_DIR'
+              value: '/mnt/otp-input/input/netex'
             }
             {
               name: 'OUTPUT_GRAPH_DIR'
