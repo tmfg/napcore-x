@@ -60,17 +60,17 @@ Open http://localhost:8080/ once the server has started.
 
 ## Scripts
 
-### crop-osm.sh
+### get-osm-test-data.sh
 
-Downloads an OSM PBF extract and crops it to a bounding box, for producing smaller local test files.
+Downloads OSM PBF extracts, crops each to a per-region bounding box, and produces smaller local test files.
 
-> scripts/crop-osm.sh \<url\> \<min_lon,min_lat,max_lon,max_lat\> \<output_path\>
+Ferry routes/terminals are extracted to a separate file.
 
-Example:
+Requires `osmconvert` (`apt install osmctools`) and `osmium` (`apt install osmium-tool`).
 
-> scripts/crop-osm.sh "https://download.geofabrik.de/europe/estonia-latest.osm.pbf" "24.350442,59.269078,25.341958,59.668126" "local-test/input/osm/tallinn-cropped.osm.pbf"
+URLs, bounding boxes and output paths are hardcoded in the script; edit it directly to change the regions.
 
-See [scripts/get-osm-test-data.sh](scripts/get-osm-test-data.sh) for more examples.
+> scripts/get-osm-test-data.sh
 
 ## Azure infra deployment (Bicep)
 
