@@ -58,6 +58,20 @@ but at least one GTFS or NeTEx file must be found overall.
 
 Open http://localhost:8080/ once the server has started.
 
+## Scripts
+
+### crop-osm.sh
+
+Downloads an OSM PBF extract and crops it to a bounding box, for producing smaller local test files.
+
+> scripts/crop-osm.sh \<url\> \<min_lon,min_lat,max_lon,max_lat\> \<output_path\>
+
+Example:
+
+> scripts/crop-osm.sh "https://download.geofabrik.de/europe/estonia-latest.osm.pbf" "24.350442,59.269078,25.341958,59.668126" "local-test/input/osm/tallinn-cropped.osm.pbf"
+
+See [scripts/get-osm-test-data.sh](scripts/get-osm-test-data.sh) for more examples.
+
 ## Azure infra deployment (Bicep)
 
 Infra lives in [infra/](infra/) and deploys at subscription scope via [infra/main.bicep](infra/main.bicep) (creates its own resource group).
