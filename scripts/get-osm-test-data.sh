@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Download OSM extracts, crop each to a region bbox for local testing, and
-# extract ferry data (route=ferry ways/relations, ferry terminals) that would
-# otherwise be dropped by cropping, merging it into a single ferry file.
+# bake ferry data (route=ferry ways/relations, ferry terminals) that would
+# otherwise be dropped by cropping into each region's output file.
 #
 # Requires:
 #   - curl
@@ -12,16 +12,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-FERRY_OUTPUT_PATH="local-test/input/osm/ferry-$(date +%Y-%m-%d).osm.pbf"
 FERRY_TAG_FILTER=(w/route=ferry r/route=ferry n/amenity=ferry_terminal w/amenity=ferry_terminal)
 
-FERRY_FILES=()
-
 # Downloads $1 (url), crops it to bbox $2 (min_lon,min_lat,max_lon,max_lat,
-# same format as osmconvert's -b= option), and saves the result to $3.
-# Also extracts ferry-related data from the full download (before cropping,
-# since a bbox crop would otherwise drop routes that cross open water) into a
-# temp file tracked in FERRY_FILES for the later merge step.
+# same format as osmconvert's -b= option), merges in ferry data extracted
+# from the full download (before cropping, since a bbox crop would otherwise
+# drop routes that cross open water), and saves the result to $3.
 handle_osm_file() {
   local url="$1"
   local bbox="$2"
@@ -31,6 +27,7 @@ handle_osm_file() {
   tmp_dir="$(mktemp -d)"
   local download_path="${tmp_dir}/download.pbf"
   local ferry_path="${tmp_dir}/ferry.pbf"
+  local cropped_path="${tmp_dir}/cropped.pbf"
 
   mkdir -p "$(dirname "${output_path}")"
 
@@ -39,15 +36,17 @@ handle_osm_file() {
 
   echo "==> Extracting ferry data"
   osmium tags-filter "${download_path}" "${FERRY_TAG_FILTER[@]}" -o "${ferry_path}"
-  FERRY_FILES+=("${ferry_path}")
 
   echo "==> Cropping to bbox ${bbox}"
   osmconvert "${download_path}" \
     -b="${bbox}" \
     --complete-ways \
-    -o="${output_path}"
+    -o="${cropped_path}"
 
-  echo "==> Done. Cropped file: ${output_path}"
+  echo "==> Merging ferry data into cropped region"
+  osmium merge "${cropped_path}" "${ferry_path}" -O -o "${output_path}"
+
+  echo "==> Done. Cropped file (with ferry data): ${output_path}"
 }
 
 handle_osm_file "https://download.geofabrik.de/europe/estonia-latest.osm.pbf" "24.350442,59.269078,25.341958,59.668126" "local-test/input/osm/tallinn-cropped-$(date +%Y-%m-%d).osm.pbf"
@@ -58,7 +57,4 @@ handle_osm_file "https://download.geofabrik.de/europe/germany/schleswig-holstein
 curl -L "https://download.geofabrik.de/europe/germany/hamburg-latest.osm.pbf" \
  -o local-test/input/osm/hamburg-full-$(date +%Y-%m-%d).osm.pbf
 
-echo "==> Merging ferry data from all regions into ${FERRY_OUTPUT_PATH}"
-osmium merge "${FERRY_FILES[@]}" -O -o "${FERRY_OUTPUT_PATH}"
-
-echo "==> Done. Merged ferry file: ${FERRY_OUTPUT_PATH}"
+echo "==> Done."

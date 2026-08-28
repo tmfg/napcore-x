@@ -64,7 +64,7 @@ Open http://localhost:8080/ once the server has started.
 
 Downloads OSM PBF extracts, crops each to a per-region bounding box, and produces smaller local test files.
 
-Ferry routes/terminals are extracted to a separate file.
+Ferry routes/terminals (which a bbox crop would otherwise drop, since they cross open water) are extracted from the full download and merged into each region's cropped output file.
 
 Requires `osmconvert` (`apt install osmctools`) and `osmium` (`apt install osmium-tool`).
 
