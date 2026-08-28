@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
-# TEMPORARY FIX: the NeTEx feed's OTH-codespace DayTypes (used by the real
-# ferry lines, e.g. Helsinki-Tallinn) have zero DayTypeAssignment data, so
-# those lines never have any valid operating date and can't be routed.
+# TEMPORARY FIX: the NeTEx feed's OTH-codespace DayTypes have zero DayTypeAssignment data, so those lines never have any valid operating date and can't be routed.
 #
 # This patches _shared_data.xml inside the NeTEx zip so every OTH DayType
 # gets a "runs every day of week" property plus a DayTypeAssignment tied to
-# a single shared OperatingPeriod, covering the same date window the
-# FlixBus GTFS test feed is valid for (2026-04-07 to 2026-06-08). Remove
-# this step once a NeTEx export with real ferry calendars is available.
-#
+# a single shared OperatingPeriod.
+# Note: this script is quick and dirty, meant for quick testing
 # Usage:
 #   scripts/patch-netex-ferry-calendar.sh [input.zip] [output.zip]
 #
