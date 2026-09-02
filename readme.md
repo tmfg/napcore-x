@@ -27,7 +27,7 @@ Data files for local testing will be located in local-test directory.
 
 ### Build the builder image
 
-> podman build -f src/build/Dockerfile -t otp-build .
+> podman build --build-arg OTP_BASE_IMAGE="$OTP_BASE_IMAGE" -f src/build/Dockerfile -t otp-build .
 
 ### Run the builder image with GTFS + NeTEx
 
@@ -47,7 +47,7 @@ but at least one GTFS or NeTEx file must be found overall.
 
 ### Build the serve image
 
-> podman build -f src/serve/Dockerfile -t otp-serve .
+> podman build --build-arg OTP_BASE_IMAGE="$OTP_BASE_IMAGE" -f src/serve/Dockerfile -t otp-serve .
 
 ### Run the serve image against the built graph
 
@@ -165,6 +165,43 @@ When a new deployment is made, the OTP build script will run and the serve app w
 The build job can take several minutes, depending on data size.
 
 The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
+
+### Create custom JAR
+
+This was clear to done in separate folder for example "otp2".
+
+Clone desired version (for now 2.9.0) `git clone --branch v2.9.0 --depth 1 https://github.com/opentripplanner/OpenTripPlanner.git`
+
+Add Napcore logo image to otp2/OpenTripPlanner/client/src/static/img. Logo is located in the home folder src/static
+
+In otp2/OpenTripPlanner/client/src/components/SearchBar/LogoSection.tsx change import logo to `import logo from '../../static/img/napcore-logo.png';`
+
+Change <img>-component to `<img alt="" src={logo} width="75" height="50" className="logo-image" />`
+
+Change "logo-image" in `client/OpenTripPlanner/client/src/style.css` to
+
+```
+.logo-image {
+  margin-right: 15px;
+}
+```
+
+Change directory to `OpenTripPlanner/client` (current) if you haven't already.
+
+    npm install
+
+Then you can test changes here
+
+    npm run dev
+
+Then the jar build itself
+
+    npm run build
+
+The Maven build produces a unified ("shaded") JAR file at `otp-shaded/target/otp-shaded-VERSION.jar` containing all necessary
+code and dependencies to run OpenTripPlanner.
+
+Move that Jar to your home directory and run dockercommands to build image based on that.
 
 ## Run OTP from jar
 
