@@ -58,6 +58,20 @@ but at least one GTFS or NeTEx file must be found overall.
 
 Open http://localhost:8080/ once the server has started.
 
+## Scripts
+
+### get-osm-test-data.sh
+
+Downloads OSM PBF extracts, crops each to a per-region bounding box, and produces smaller local test files.
+
+Ferry routes/terminals (which a bbox crop would otherwise drop, since they cross open water) are extracted from the full download and merged into each region's cropped output file.
+
+Requires `osmconvert` (`apt install osmctools`) and `osmium` (`apt install osmium-tool`).
+
+URLs, bounding boxes and output paths are hardcoded in the script; edit it directly to change the regions.
+
+> scripts/get-osm-test-data.sh
+
 ## Azure infra deployment (Bicep)
 
 Infra lives in [infra/](infra/) and deploys at subscription scope via [infra/main.bicep](infra/main.bicep) (creates its own resource group).
