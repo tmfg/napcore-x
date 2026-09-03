@@ -1,6 +1,7 @@
 {
   "osm": [],
   "transitFeeds": [],
+  "transitModelTimeZone": "Europe/Helsinki",
   "netexDefaults": {
     "sharedFilePattern": "^_(?:shared_data|stops)\\.xml$",
     "sharedGroupFilePattern": "^([^_]+)_shared_data\\.xml$",
