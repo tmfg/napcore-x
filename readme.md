@@ -172,15 +172,15 @@ The build job can take several minutes, depending on data size.
 
 The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
 
-### Create OTP JAR and image with our custom changes
+### Create OTP image with our custom changes
 
 We are doing a bit of a hacky solution to inject custom logo to OTP debug UI.
 
 Clone desired version (Note: process only tested for v2.9.0) `git clone --branch v2.9.0 --depth 1 https://github.com/opentripplanner/OpenTripPlanner.git`
 
-Add Napcore logo image to otp2/OpenTripPlanner/client/src/static/img. Logo is located in the home folder src/static
+Add Napcore logo image to OTP_DIR/OpenTripPlanner/client/src/static/img. Logo is located in the home folder src/static
 
-In otp2/OpenTripPlanner/client/src/components/SearchBar/LogoSection.tsx change import logo to `import logo from '../../static/img/napcore-logo.png';`
+In OTP_DIR/OpenTripPlanner/client/src/components/SearchBar/LogoSection.tsx change import logo to `import logo from '../../static/img/napcore-logo.png';`
 
 Change <img>-component to `<img alt="" src={logo} width="75" height="50" className="logo-image" />`
 
@@ -192,7 +192,7 @@ Change "logo-image" in `client/OpenTripPlanner/client/src/style.css` to
 }
 ```
 
-Note: recent version of node, npm, java, maven needed.
+Note: recent version of node, npm, java, maven, podman needed.
 
 Change directory to `OpenTripPlanner/client` (current) if you haven't already.
 
@@ -202,11 +202,11 @@ Then you can test changes here
 
     npm run dev
 
-If it looks good, run the script to build a custom otp image (requires maven, npm, podman):
+If it looks good, run the script to build a custom otp image:
 
     OTP_DIR=/path/to/OpenTripPlanner TARGET_PLATFORM=<optional, defaults to linux/amd64> scripts/build-custom-otp-image.sh
 
-This produces `localhost/otp-custom:latest` image that has the OTP debug client replaced with our changes. Note: it edits the local OTP repo.
+This produces `localhost/otp-custom:latest` image that has the OTP debug client replaced with our changes. Note: it also edits the local OTP repo.
 
 Build otp-serve image:
 
