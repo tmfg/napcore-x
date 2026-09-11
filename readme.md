@@ -144,6 +144,12 @@ Build and push images. This will use your Azure credentials to push to ACR, so n
 
 Note: if ACR_NAME is not given, it defaults to the dev default name acrnapcorexdemotest
 
+Set `OTP_IMAGE` to use a custom-built base image (e.g. the output of
+[scripts/build-custom-otp-image.sh](scripts/build-custom-otp-image.sh)) for
+both otp-build and otp-serve, instead of the default official image:
+
+> ACR_NAME="acr-name" OTP_IMAGE="localhost/otp-custom:latest" ./scripts/build-and-push-images.sh
+
 The script will output the new image tags, which will need to be updated to `infra/main.local.bicepparam`. The tag contains current git commit hash, as well as -dirty suffix if there are unstaged changes.
 
 #### 5. Deploy all resources
@@ -166,11 +172,11 @@ The build job can take several minutes, depending on data size.
 
 The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
 
-### Create custom JAR
+### Create OTP JAR and image with our custom changes
 
-This was clear to done in separate folder for example "otp2".
+We are doing a bit of a hacky solution to inject custom logo to OTP debug UI.
 
-Clone desired version (for now 2.9.0) `git clone --branch v2.9.0 --depth 1 https://github.com/opentripplanner/OpenTripPlanner.git`
+Clone desired version (Note: process only tested for v2.9.0) `git clone --branch v2.9.0 --depth 1 https://github.com/opentripplanner/OpenTripPlanner.git`
 
 Add Napcore logo image to otp2/OpenTripPlanner/client/src/static/img. Logo is located in the home folder src/static
 
@@ -186,6 +192,8 @@ Change "logo-image" in `client/OpenTripPlanner/client/src/style.css` to
 }
 ```
 
+Note: recent version of node, npm, java, maven needed.
+
 Change directory to `OpenTripPlanner/client` (current) if you haven't already.
 
     npm install
@@ -194,14 +202,15 @@ Then you can test changes here
 
     npm run dev
 
-Then the jar build itself
+If it looks good, run the script to build a custom otp image (requires maven, npm, podman):
 
-    npm run build
+    OTP_DIR=/path/to/OpenTripPlanner TARGET_PLATFORM=<optional, defaults to linux/amd64> scripts/build-custom-otp-image.sh
 
-The Maven build produces a unified ("shaded") JAR file at `otp-shaded/target/otp-shaded-VERSION.jar` containing all necessary
-code and dependencies to run OpenTripPlanner.
+This produces `localhost/otp-custom:latest` image that has the OTP debug client replaced with our changes. Note: it edits the local OTP repo.
 
-Move that Jar to your home directory and run dockercommands to build image based on that.
+Build otp-serve image:
+
+    podman build --build-arg OTP_BASE_IMAGE="localhost/otp-custom:latest" -f src/serve/Dockerfile -t otp-serve .
 
 ## Run OTP from jar
 

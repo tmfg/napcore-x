@@ -1,4 +1,0 @@
-FROM docker.io/opentripplanner/opentripplanner:2.9.0
-
-# Replace the official OTP JAR with our custom build
-COPY otp-shaded-2.9.0.jar /opt/opentripplanner/otp-shaded-2.9.0.jar
