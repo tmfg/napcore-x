@@ -1,4 +1,6 @@
-FROM docker.io/opentripplanner/opentripplanner:2.9.0
+ARG OTP_BASE_IMAGE=docker.io/opentripplanner/opentripplanner:2.9.0
+
+FROM ${OTP_BASE_IMAGE}
 
 WORKDIR /var/opentripplanner
 

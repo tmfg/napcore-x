@@ -27,7 +27,7 @@ Data files for local testing will be located in local-test directory.
 
 ### Build the builder image
 
-> podman build -f src/build/Dockerfile -t otp-build .
+> podman build --build-arg OTP_BASE_IMAGE="$OTP_BASE_IMAGE" -f src/build/Dockerfile -t otp-build .
 
 ### Run the builder image with GTFS + NeTEx
 
@@ -47,7 +47,7 @@ but at least one GTFS or NeTEx file must be found overall.
 
 ### Build the serve image
 
-> podman build -f src/serve/Dockerfile -t otp-serve .
+> podman build --build-arg OTP_BASE_IMAGE="$OTP_BASE_IMAGE" -f src/serve/Dockerfile -t otp-serve .
 
 ### Run the serve image against the built graph
 
@@ -158,6 +158,12 @@ Build and push images. This will use your Azure credentials to push to ACR, so n
 
 Note: if ACR_NAME is not given, it defaults to the dev default name acrnapcorexdemotest
 
+Set `OTP_IMAGE` to use a custom-built base image (e.g. the output of
+[scripts/build-custom-otp-image.sh](scripts/build-custom-otp-image.sh)) for
+both otp-build and otp-serve, instead of the default official image:
+
+> ACR_NAME="acr-name" OTP_IMAGE="localhost/otp-custom:latest" ./scripts/build-and-push-images.sh
+
 The script will output the new image tags, which will need to be updated to `infra/main.local.bicepparam`. The tag contains current git commit hash, as well as -dirty suffix if there are unstaged changes.
 
 #### 5. Deploy all resources
@@ -179,6 +185,46 @@ When a new deployment is made, the OTP build script will run and the serve app w
 The build job can take several minutes, depending on data size.
 
 The build job and serve app deploy in parallel, so on a fresh deployment the serve app can start and try to load the graph before the build job has finished writing it. Wait for the build job container to finish, then restart the serve app (via the portal, or `az webapp restart`) to pick up the new graph.
+
+### Create OTP image with our custom changes
+
+We are doing a bit of a hacky solution to inject custom logo to OTP debug UI.
+
+Clone desired version (Note: process only tested for v2.9.0) `git clone --branch v2.9.0 --depth 1 https://github.com/opentripplanner/OpenTripPlanner.git`
+
+Add Napcore logo image to OTP_DIR/OpenTripPlanner/client/src/static/img. Logo is located in the home folder src/static
+
+In OTP_DIR/OpenTripPlanner/client/src/components/SearchBar/LogoSection.tsx change import logo to `import logo from '../../static/img/napcore-logo.png';`
+
+Change <img>-component to `<img alt="" src={logo} width="75" height="50" className="logo-image" />`
+
+Change "logo-image" in `client/OpenTripPlanner/client/src/style.css` to
+
+```
+.logo-image {
+  margin-right: 15px;
+}
+```
+
+Note: recent version of node, npm, java, maven, podman needed.
+
+Change directory to `OpenTripPlanner/client` (current) if you haven't already.
+
+    npm install
+
+Then you can test changes here
+
+    npm run dev
+
+If it looks good, run the script to build a custom otp image:
+
+    OTP_DIR=/path/to/OpenTripPlanner TARGET_PLATFORM=<optional, defaults to linux/amd64> scripts/build-custom-otp-image.sh
+
+This produces `localhost/otp-custom:latest` image that has the OTP debug client replaced with our changes. Note: it also edits the local OTP repo.
+
+Build otp-serve image:
+
+    podman build --build-arg OTP_BASE_IMAGE="localhost/otp-custom:latest" -f src/serve/Dockerfile -t otp-serve .
 
 ## Run OTP from jar
 
