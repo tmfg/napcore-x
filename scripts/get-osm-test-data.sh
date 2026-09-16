@@ -53,6 +53,7 @@ handle_osm_file "https://download.geofabrik.de/europe/estonia-latest.osm.pbf" "2
 handle_osm_file "https://download.geofabrik.de/europe/finland-latest.osm.pbf" "24.608621,60.125985,25.271921,60.327156" "local-test/input/osm/helsinki-cropped-$(date +%Y-%m-%d).osm.pbf"
 handle_osm_file "https://download.geofabrik.de/europe/sweden-latest.osm.pbf" "17.679989,59.197248,18.465511,59.498305" "local-test/input/osm/stockholm-cropped-$(date +%Y-%m-%d).osm.pbf"
 handle_osm_file "https://download.geofabrik.de/europe/germany/schleswig-holstein-latest.osm.pbf" "10.110924,53.652606,10.945885,54.02293" "local-test/input/osm/lubeck-travemunde-cropped-$(date +%Y-%m-%d).osm.pbf"
+handle_osm_file "https://download.geofabrik.de/europe/austria-latest.osm.pbf" "16.0321,48.0444,16.727,48.4085" "local-test/input/osm/wien-cropped-$(date +%Y-%m-%d).osm.pbf"
 
 curl -L "https://download.geofabrik.de/europe/germany/hamburg-latest.osm.pbf" \
  -o local-test/input/osm/hamburg-full-$(date +%Y-%m-%d).osm.pbf
