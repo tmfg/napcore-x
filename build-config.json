@@ -1,10 +1,32 @@
 {
   "osm": [],
-  "transitFeeds": [],
+
   "transitModelTimeZone": "Europe/Helsinki",
-  "netexDefaults": {
-    "sharedFilePattern": "^_(?:shared_data|stops)\\.xml$",
-    "sharedGroupFilePattern": "^([^_]+)_shared_data\\.xml$",
-    "groupFilePattern": "^(line)_\\d+\\.xml$"
-  }
+
+  "transitFeeds": [
+    {
+      "type": "gtfs",
+      "feedId": "FINNLINES",
+      "source": "file:///opt/otp-data/transit/Finnlines.zip"
+    },
+    {
+      "type": "gtfs",
+      "feedId": "TALLINN",
+      "source": "file:///opt/otp-data/transit/tallinn.zip"
+    },
+    {
+      "type": "netex",
+      "feedId": "FTR-NETEX",
+      "source": "file:///opt/otp-data/transit/FTR-netex.zip",
+      "sharedFilePattern": "_FTR_shared_data\\.xml",
+      "groupFilePattern": "(FTR_[^_]+)_.*\\.xml"
+    },
+    {
+      "type": "netex",
+      "feedId": "NAPCOREX_PATCHED",
+      "source": "file:///opt/otp-data/transit/Napcorex_patched.zip",
+      "sharedFilePattern": "_(?:shared_data|stops)\\.xml",
+      "groupFilePattern": "(line)_\\d+\\.xml"
+    }
+  ]
 }

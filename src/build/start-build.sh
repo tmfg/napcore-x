@@ -90,53 +90,12 @@ find "$OTP_HOME/data/osm" -maxdepth 1 -type f -print
 
 
 # --------------------------------------------------
-# Load transit and generate transitFeeds
+# Load transit data
 # --------------------------------------------------
-
-TRANSIT_CONFIG="/tmp/transit-feeds.json"
 
 GTFS_COUNT=0
 NETEX_COUNT=0
 TRANSIT_COUNT=0
-FIRST=true
-
-printf '[\n' > "$TRANSIT_CONFIG"
-
-# ------------------------------------------------
-# Appends one processed feed to TRANSIT_CONFIG
-# ------------------------------------------------
-
-add_transit_feed() {
-  FEED_TYPE="$1"
-  FEED_TARGET="$2"
-  FEED_BASENAME="$(basename "$FEED_TARGET")"
-
-  FEED_ID="$(printf '%s' "$FEED_BASENAME" \
-    | sed 's/\.[^.]*$//' \
-    | tr '[:lower:]' '[:upper:]' \
-    | sed 's/[^A-Z0-9_-]/_/g')"
-
-  if [ "$FIRST" = false ]; then
-    printf ',\n' >> "$TRANSIT_CONFIG"
-  fi
-
-  jq -n \
-    --arg type "$FEED_TYPE" \
-    --arg feedId "$FEED_ID" \
-    --arg source "file://$FEED_TARGET" \
-    '{
-      type: $type,
-      feedId: $feedId,
-      source: $source
-    }' >> "$TRANSIT_CONFIG"
-
-  FIRST=false
-  TRANSIT_COUNT=$((TRANSIT_COUNT + 1))
-
-  echo "Configured $FEED_TYPE feed:"
-  echo "  feedId: $FEED_ID"
-  echo "  source: file://$FEED_TARGET"
-}
 
 # ------------------------------------------------
 # GTFS: deduplicate trip_id, then load
@@ -213,8 +172,9 @@ do
   rm -rf "$GTFS_CLEAN_DIR"
 
   GTFS_COUNT=$((GTFS_COUNT + 1))
+  TRANSIT_COUNT=$((TRANSIT_COUNT + 1))
 
-  add_transit_feed "gtfs" "$TARGET"
+  echo "Loaded GTFS: $TARGET"
 done
 
 # ------------------------------------------------
@@ -230,18 +190,16 @@ do
 
   cp "$INPUT_PATH" "$TARGET"
 
-  echo "Loaded NeTEx unchanged: $INPUT_PATH"
-
   NETEX_COUNT=$((NETEX_COUNT + 1))
+  TRANSIT_COUNT=$((TRANSIT_COUNT + 1))
 
-  add_transit_feed "netex" "$TARGET"
+  echo "Loaded NeTEx unchanged: $TARGET"
 done
 
-printf '\n]\n' >> "$TRANSIT_CONFIG"
 
-# --------------------------------------------------
+# ------------------------------------------------
 # Validate transit data
-# --------------------------------------------------
+# ------------------------------------------------
 
 if [ "$TRANSIT_COUNT" -eq 0 ]; then
   echo ""
@@ -265,8 +223,7 @@ echo "========================================"
 
 jq \
   --slurpfile osm "$OSM_CONFIG" \
-  --slurpfile transitFeeds "$TRANSIT_CONFIG" \
-  '.osm = $osm[0] | .transitFeeds = $transitFeeds[0]' \
+  '.osm = $osm[0]' \
   "$OTP_HOME/build-config.json" \
   > "$OTP_HOME/build-config.json.tmp"
 
