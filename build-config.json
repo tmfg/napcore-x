@@ -27,6 +27,13 @@
       "source": "file:///opt/otp-data/transit/Napcorex_patched.zip",
       "sharedFilePattern": "_(?:shared_data|stops)\\.xml",
       "groupFilePattern": "(line)_\\d+\\.xml"
+    },
+    {
+      "type": "netex",
+      "feedId": "NETEX-DELFI",
+      "source": "file:///opt/otp-data/transit/netex-delfi.zip",
+      "groupFilePattern": "([^/]+)/.*\\.xml$",
+      "ignoreFilePattern": ".*:Zone\\.Identifier$"
     }
   ]
 }
