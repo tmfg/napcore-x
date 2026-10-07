@@ -4,7 +4,7 @@ FROM ${OTP_BASE_IMAGE}
 
 WORKDIR /var/opentripplanner
 
-ENV JAVA_OPTS="-Xmx8G"
+ENV JAVA_OPTS="-Xmx10G"
 
 
 # jq needed for parsing build-config.json, unzip and zip needed for removing duplicates from data
