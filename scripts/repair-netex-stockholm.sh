@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Requires Bash, Info-ZIP zip/unzip, Perl and XML::Twig; no Python is used.
+# Requires Bash, Info-ZIP zip/unzip and Python 3.
+#
+# Repairs a Stockholm NeTEx ZIP feed by restoring missing platform quays,
+# fixing quay references, and writing a patched archive.
+# Restored platforms use their station’s centroid coordinates.
 # Usage:
 #   scripts/repair-netex-stockholm.sh [input.zip] [output.zip]
 #
@@ -23,10 +27,9 @@ if [[ ${1:-} == --help || ${1:-} == -h ]]; then
     exit 0
 fi
 [[ $# -le 2 ]] || { usage >&2; exit 2; }
-for tool in unzip zip perl realpath mktemp cp mv rm rmdir cat sort uniq grep; do
+for tool in unzip zip python3 realpath mktemp cp mv rm rmdir cat sort uniq grep; do
     command -v "$tool" >/dev/null || fail "Required command is missing: $tool"
 done
-perl -MXML::Twig -e 1 || fail 'Install the Perl XML::Twig module (Debian/Ubuntu: libxml-twig-perl).'
 
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 default_source="$script_directory/local-test/input/netex/Napcorex.zip"
@@ -62,152 +65,199 @@ done
 
 # Use an XML parser rather than line-based substitutions: NeTEx elements can
 # span lines, use namespace prefixes and contain escaped text.
-perl - "$work_directory" <<'PERL'
-use strict;
-use warnings;
-use XML::Twig;
+python3 - "$work_directory" <<'PYTHON'
+import copy
+import re
+import sys
+import xml.etree.ElementTree as ET
 
-my ($directory) = @ARGV;
-my $namespace = 'http://www.netex.org.uk/netex';
+directory = sys.argv[1]
+namespace = "http://www.netex.org.uk/netex"
+namespaces = {}
 
-sub is_element {
-    my ($element, $name) = @_;
-    return $element->local_name eq $name
-        && ($element->namespace // '') eq $namespace;
-}
+for _, (prefix, uri) in ET.iterparse(
+    f"{directory}/_stops.xml", events=("start-ns",)
+):
+    namespaces[prefix] = uri
+for _, (prefix, uri) in ET.iterparse(
+    f"{directory}/_shared_data.xml", events=("start-ns",)
+):
+    namespaces[prefix] = uri
+for prefix, uri in namespaces.items():
+    if prefix != "xml":
+        ET.register_namespace(prefix, uri)
 
-sub elements {
-    my ($root, $name) = @_;
-    return grep { is_element($_, $name) } $root->descendants;
-}
 
-sub child {
-    my ($element, $name) = @_;
-    return unless defined $element;
-    return (grep { is_element($_, $name) } $element->children)[0];
-}
+def parse_xml(path):
+    parser = ET.XMLParser(
+        target=ET.TreeBuilder(insert_comments=True, insert_pis=True)
+    )
+    return ET.parse(path, parser=parser)
 
-sub required_attribute {
-    my ($element, $name) = @_;
-    my $value = $element->att($name);
-    die "Missing $name on " . $element->tag . "\n" unless defined $value;
-    return $value;
-}
 
-sub unique_index {
-    my ($root, $name) = @_;
-    my %index;
-    for my $element (elements($root, $name)) {
-        my $id = required_attribute($element, 'id');
-        die "Duplicate $name: $id\n" if exists $index{$id};
-        $index{$id} = $element;
-    }
-    return \%index;
-}
+def is_element(element, name):
+    return (
+        isinstance(element.tag, str)
+        and element.tag == f"{{{namespace}}}{name}"
+    )
 
-sub platform_ids {
-    my ($stop_point) = @_;
-    $stop_point =~ /\ASE:001:ScheduledStopPoint:(9022[0-9]{12})\z/
-        or die "Unsupported Stockholm scheduled stop identifier: $stop_point\n";
-    my $code = $1;
-    return ("SE:001:Quay:$code",
-        'FTG:StopPlace:9021' . substr($code, 4, 9) . '000',
-        substr($code, -3));
-}
 
-sub qualified_name {
-    my ($parent, $name) = @_;
-    my $qualified = $parent->tag;
-    $qualified =~ s/[^:]+\z/$name/;
-    return $qualified;
-}
+def elements(root, name):
+    return [element for element in root.iter() if is_element(element, name)]
 
-my $stops = XML::Twig->new(no_xxe => 1);
-my $shared = XML::Twig->new(no_xxe => 1);
-$stops->parsefile("$directory/_stops.xml");
-$shared->parsefile("$directory/_shared_data.xml");
-my $places = unique_index($stops->root, 'StopPlace');
-my $quays = unique_index($stops->root, 'Quay');
-my $scheduled = unique_index($shared->root, 'ScheduledStopPoint');
-my @assignments = elements($shared->root, 'PassengerStopAssignment');
-die "Expected Stockholm StopPlaces, Quays and PassengerStopAssignments\n"
-    unless keys(%$places) && keys(%$quays) && @assignments;
 
-for my $place (values %$places) {
-    my $container = child($place, 'quays');
-    next unless defined $container;
-    for my $quay (grep { is_element($_, 'Quay') } $container->children) {
-        my $stop_point = required_attribute($quay, 'id');
-        $stop_point =~ s/:Quay:/:ScheduledStopPoint:/;
-        my (undef, $parent_id) = platform_ids($stop_point);
-        die "Platform does not match its station: " . $quay->att('id') . "\n"
-            unless $parent_id eq $place->att('id');
-    }
-}
+def child(element, name):
+    if element is None:
+        return None
+    return next((item for item in element if is_element(item, name)), None)
 
-my %stats = (
-    assignments => scalar @assignments,
-    original_quays => scalar keys %$quays,
-    rewritten_quay_refs => 0,
-    restored_quays_at_station_centroids => 0,
-);
-for my $assignment (@assignments) {
-    my $stop_ref = child($assignment, 'ScheduledStopPointRef');
-    my $quay_ref = child($assignment, 'QuayRef');
-    die "Incomplete PassengerStopAssignment: " . $assignment->att('id') . "\n"
-        unless defined $stop_ref && defined $quay_ref;
-    my $stop_id = required_attribute($stop_ref, 'ref');
-    die "ScheduledStopPoint is absent: $stop_id\n" unless exists $scheduled->{$stop_id};
-    my ($quay_id, $parent_id, $platform) = platform_ids($stop_id);
-    die "Parent station is absent for $stop_id: $parent_id\n"
-        unless exists $places->{$parent_id};
-    unless (exists $quays->{$quay_id}) {
-        my $place = $places->{$parent_id};
-        my $centroid = child($place, 'Centroid');
-        my $location = child($centroid, 'Location');
-        die "Parent station has no coordinates: $parent_id\n"
-            unless defined child($location, 'Latitude')
-                && defined child($location, 'Longitude');
-        my $container = child($place, 'quays');
-        unless (defined $container) {
-            $container = XML::Twig::Elt->new(qualified_name($place, 'quays'));
-            $container->paste(last_child => $place);
-        }
-        my $quay = XML::Twig::Elt->new(qualified_name($container, 'Quay'),
-            { version => '1', id => $quay_id });
-        $quay->paste(last_child => $container);
-        XML::Twig::Elt->new(qualified_name($quay, 'PrivateCode'), 0 + $platform)
-            ->paste(last_child => $quay);
-        $centroid->copy->paste(last_child => $quay);
-        $quays->{$quay_id} = $quay;
-        ++$stats{restored_quays_at_station_centroids};
-    }
-    if (required_attribute($quay_ref, 'ref') ne $quay_id) {
-        $quay_ref->set_att(ref => $quay_id);
-        $quay_ref->del_att('version');
-        ++$stats{rewritten_quay_refs};
-    }
+
+def required_attribute(element, name):
+    value = element.get(name)
+    if value is None:
+        raise ValueError(f"Missing {name} on {element.tag}")
+    return value
+
+
+def unique_index(root, name):
+    index = {}
+    for element in elements(root, name):
+        identifier = required_attribute(element, "id")
+        if identifier in index:
+            raise ValueError(f"Duplicate {name}: {identifier}")
+        index[identifier] = element
+    return index
+
+
+def platform_ids(stop_point):
+    match = re.fullmatch(
+        r"SE:001:ScheduledStopPoint:(9022[0-9]{12})", stop_point
+    )
+    if match is None:
+        raise ValueError(
+            f"Unsupported Stockholm scheduled stop identifier: {stop_point}"
+        )
+    code = match.group(1)
+    return (
+        f"SE:001:Quay:{code}",
+        f"FTG:StopPlace:9021{code[4:13]}000",
+        code[-3:],
+    )
+
+
+def qualified_name(parent, name):
+    return f"{{{namespace}}}{name}"
+
+
+def append_element(parent, element):
+    if len(parent):
+        whitespace = parent[-1].tail
+        if whitespace and whitespace.isspace():
+            parent[-1].tail = whitespace
+            element.tail = whitespace
+    parent.append(element)
+
+
+stops = parse_xml(f"{directory}/_stops.xml")
+shared = parse_xml(f"{directory}/_shared_data.xml")
+places = unique_index(stops.getroot(), "StopPlace")
+quays = unique_index(stops.getroot(), "Quay")
+scheduled = unique_index(shared.getroot(), "ScheduledStopPoint")
+assignments = elements(shared.getroot(), "PassengerStopAssignment")
+if not places or not quays or not assignments:
+    raise ValueError(
+        "Expected Stockholm StopPlaces, Quays and PassengerStopAssignments"
+    )
+
+for place in places.values():
+    container = child(place, "quays")
+    if container is None:
+        continue
+    for quay in (item for item in container if is_element(item, "Quay")):
+        stop_point = required_attribute(quay, "id").replace(
+            ":Quay:", ":ScheduledStopPoint:", 1
+        )
+        _, parent_id, _ = platform_ids(stop_point)
+        if parent_id != place.get("id"):
+            raise ValueError(
+                f"Platform does not match its station: {quay.get('id')}"
+            )
+
+stats = {
+    "assignments": len(assignments),
+    "original_quays": len(quays),
+    "rewritten_quay_refs": 0,
+    "restored_quays_at_station_centroids": 0,
 }
-for my $ref (elements($shared->root, 'QuayRef')) {
-    my $id = required_attribute($ref, 'ref');
-    die "Unresolved quay reference after repair: $id\n" unless exists $quays->{$id};
-}
-$stats{output_quays} = scalar keys %$quays;
-$stops->set_encoding('UTF-8');
-$shared->set_encoding('UTF-8');
-$stops->print_to_file("$directory/_stops.xml");
-$shared->print_to_file("$directory/_shared_data.xml");
-open my $report, '>', "$directory/stats" or die "Cannot write repair statistics: $!\n";
-for my $name (qw(assignments original_quays rewritten_quay_refs
-    restored_quays_at_station_centroids output_quays)) {
-    print {$report} "  $name: $stats{$name}\n" or die "Cannot write statistics: $!\n";
-}
-if ($stats{restored_quays_at_station_centroids}) {
-    print {$report} "WARNING: Restored platform coordinates are station centroids, not surveyed positions.\n"
-        or die "Cannot write coordinate warning: $!\n";
-}
-close $report or die "Cannot close repair statistics: $!\n";
-PERL
+for assignment in assignments:
+    stop_ref = child(assignment, "ScheduledStopPointRef")
+    quay_ref = child(assignment, "QuayRef")
+    if stop_ref is None or quay_ref is None:
+        raise ValueError(
+            f"Incomplete PassengerStopAssignment: {assignment.get('id')}"
+        )
+    stop_id = required_attribute(stop_ref, "ref")
+    if stop_id not in scheduled:
+        raise ValueError(f"ScheduledStopPoint is absent: {stop_id}")
+    quay_id, parent_id, platform = platform_ids(stop_id)
+    if parent_id not in places:
+        raise ValueError(f"Parent station is absent for {stop_id}: {parent_id}")
+    if quay_id not in quays:
+        place = places[parent_id]
+        centroid = child(place, "Centroid")
+        location = child(centroid, "Location")
+        if (
+            child(location, "Latitude") is None
+            or child(location, "Longitude") is None
+        ):
+            raise ValueError(f"Parent station has no coordinates: {parent_id}")
+        container = child(place, "quays")
+        if container is None:
+            container = ET.Element(qualified_name(place, "quays"))
+            append_element(place, container)
+        quay = ET.Element(
+            qualified_name(container, "Quay"),
+            {"version": "1", "id": quay_id},
+        )
+        append_element(container, quay)
+        private_code = ET.Element(qualified_name(quay, "PrivateCode"))
+        private_code.text = str(int(platform))
+        append_element(quay, private_code)
+        append_element(quay, copy.deepcopy(centroid))
+        quays[quay_id] = quay
+        stats["restored_quays_at_station_centroids"] += 1
+    if required_attribute(quay_ref, "ref") != quay_id:
+        quay_ref.set("ref", quay_id)
+        quay_ref.attrib.pop("version", None)
+        stats["rewritten_quay_refs"] += 1
+
+for ref in elements(shared.getroot(), "QuayRef"):
+    identifier = required_attribute(ref, "ref")
+    if identifier not in quays:
+        raise ValueError(f"Unresolved quay reference after repair: {identifier}")
+
+stats["output_quays"] = len(quays)
+stops.write(
+    f"{directory}/_stops.xml", encoding="UTF-8", xml_declaration=True
+)
+shared.write(
+    f"{directory}/_shared_data.xml", encoding="UTF-8", xml_declaration=True
+)
+with open(f"{directory}/stats", "w", encoding="utf-8") as report:
+    for name in (
+        "assignments",
+        "original_quays",
+        "rewritten_quay_refs",
+        "restored_quays_at_station_centroids",
+        "output_quays",
+    ):
+        report.write(f"  {name}: {stats[name]}\n")
+    if stats["restored_quays_at_station_centroids"]:
+        report.write(
+            "WARNING: Restored platform coordinates are station centroids, "
+            "not surveyed positions.\n"
+        )
+PYTHON
 
 # Updating a copy preserves all other entries and the original archive comment.
 cp -- "$source_file" "$work_directory/archive.zip"
