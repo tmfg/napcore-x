@@ -28,6 +28,13 @@
       "sharedFilePattern": "_(?:shared_data|stops)\\.xml",
       "groupFilePattern": "(line)_\\d+\\.xml"
     },
+        {
+      "type": "netex",
+      "feedId": "NAPCOREX_STOCKHOLM",
+      "source": "file:///opt/otp-data/transit/Napcorex-patched-stockholm.zip",
+      "sharedFilePattern": "_(?:shared_data|stops)\\.xml",
+      "groupFilePattern": "(line)_\\d+\\.xml"
+    },
     {
       "type": "netex",
       "feedId": "NETEX-DELFI",
