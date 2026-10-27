@@ -14,12 +14,12 @@
       "feedId": "TALLINN",
       "source": "file:///opt/otp-data/transit/tallinn.zip"
     },
-    {
+        {
       "type": "netex",
-      "feedId": "FTR-NETEX",
-      "source": "file:///opt/otp-data/transit/FTR-netex.zip",
-      "sharedFilePattern": "_FTR_shared_data\\.xml",
-      "groupFilePattern": "(FTR_[^_]+)_.*\\.xml"
+      "feedId": "FTR-PETI",
+      "source": "file:///opt/otp-data/transit/FTR-PETI-netex.zip",
+      "sharedFilePattern": "(?:stops|authorities|_FTR_shared_data)\\.xml",
+      "groupFilePattern": "FTR_([^_]+)_[^/]+\\.xml"
     },
     {
       "type": "netex",
