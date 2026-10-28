@@ -17,9 +17,9 @@
     {
       "type": "netex",
       "feedId": "FTR-NETEX",
-      "source": "file:///opt/otp-data/transit/FTR-netex.zip",
-      "sharedFilePattern": "_FTR_shared_data\\.xml",
-      "groupFilePattern": "(FTR_[^_]+)_.*\\.xml"
+      "source": "file:///opt/otp-data/transit/FTR-PETI-netex.zip",
+      "sharedFilePattern": "(?:_FTR_shared_data|stops|authorities)\\.xml",
+      "groupFilePattern": "(FTR)_.*\\.xml"
     },
     {
       "type": "netex",
@@ -39,8 +39,8 @@
       "type": "netex",
       "feedId": "NETEX-DELFI",
       "source": "file:///opt/otp-data/transit/netex-delfi.zip",
-      "groupFilePattern": "([^/]+)/.*\\.xml$",
-      "ignoreFilePattern": ".*:Zone\\.Identifier$"
+      "ignoreFilePattern": ".*\\.pdf",
+      "groupFilePattern": "([^/]+)/.*\\.xml"
     }
   ]
 }
