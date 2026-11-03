@@ -101,7 +101,7 @@
     },
     "itineraryFilters" : {
       "transitGeneralizedCostLimit" : {
-        "costLimitFunction" : "15m + 1.5 x",
+        "costLimitFunction" : "120m + 5.0 x",
         "intervalRelaxFactor" : 0.4
       },
       "nonTransitGeneralizedCostLimit" : "400 + 1.5x",
@@ -113,7 +113,7 @@
     },
     "ignoreRealtimeUpdates" : false,
     "geoidElevation" : false,
-    "maxJourneyDuration" : "36h",
+    "maxJourneyDuration" : "96h",
     "unpreferred" : {
       "agencies" : [
         "HSL:123"
