@@ -14,7 +14,7 @@
       "feedId": "TALLINN",
       "source": "file:///opt/otp-data/transit/tallinn.zip"
     },
-    {
+        {
       "type": "netex",
       "feedId": "FTR-NETEX",
       "source": "file:///opt/otp-data/transit/FTR-PETI-netex.zip",
