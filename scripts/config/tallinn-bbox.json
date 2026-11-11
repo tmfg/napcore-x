@@ -1,0 +1,8 @@
+{
+  "extracts": [
+    {
+      "output": "local-test/input/osm/tallinn-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [24.350442,59.269078,25.341958,59.668126]
+    }
+  ]
+}

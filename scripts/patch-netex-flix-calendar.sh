@@ -21,8 +21,8 @@ if (( $# > 2 )); then
   exit 1
 fi
 
-INPUT="${1:-napcore_netex_de_flix.zip}"
-OUTPUT="${2:-napcore_netex_de_flix-patched.zip}"
+INPUT="${1:-local-test/input/netex/napcore_netex_de_flix.zip}"
+OUTPUT="${2:-local-test/input/netex/napcore_netex_de_flix-patched.zip}"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
