@@ -19,6 +19,10 @@
     {
       "output": "local-test/input/osm/Rovaniemi-cropped-$(date +%Y-%m-%d).osm.pbf",
       "bbox": [25.639289,66.477541,25.879135,66.550003]
+    },
+    {
+      "output": "local-test/input/osm/Tornio-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [24.14512,65.816962,24.217904,65.8644]
     }
   ]
 }
