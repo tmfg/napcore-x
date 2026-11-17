@@ -1,5 +1,42 @@
 # Napcore x demo
 
+### Purpose
+
+Napcore-X is a demonstrator project showcasing journey planning and routing capabilities using OpenTripPlanner together with OSM, GTFS and NeTEx data.
+
+The project demonstrates how multimodal transportation datasets can be processed, deployed and served using a cloud-native Azure architecture.
+
+### Maintainer
+
+This project is maintained by Fintraffic / Traffic Management Company Finland Ltd.
+
+Primary contact:
+
+napcore@fintraffic.fi
+
+Repository maintainers:
+
+### Support status
+
+This project is a demonstration and reference implementation.
+
+It is provided as-is and is not considered a production-supported service. Bug fixes and enhancements may be accepted at the maintainers' discretion.
+
+### Issues
+
+Bug reports and enhancement requests may be submitted through GitHub Issues.
+
+Please include:
+
+- expected behavior
+- actual behavior
+- reproduction steps
+- relevant logs
+
+### Contributing
+
+External contributions not allowed.
+
 ## Install requirements
 
 Azure CLI and Bicep are needed for deployment.
@@ -225,4 +262,3 @@ This produces `localhost/otp-custom:latest` image that has the OTP debug client 
 Build otp-serve image:
 
     podman build --build-arg OTP_BASE_IMAGE="localhost/otp-custom:latest" -f src/serve/Dockerfile -t otp-serve .
-
