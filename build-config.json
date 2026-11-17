@@ -11,10 +11,15 @@
     },
     {
       "type": "gtfs",
+      "feedId": "FLIXBUS",
+      "source": "file:///opt/otp-data/transit/flixbus_only.zip"
+    },
+    {
+      "type": "gtfs",
       "feedId": "TALLINN",
       "source": "file:///opt/otp-data/transit/tallinn.zip"
     },
-        {
+    {
       "type": "netex",
       "feedId": "FTR-NETEX",
       "source": "file:///opt/otp-data/transit/FTR-PETI-netex.zip",
@@ -41,6 +46,13 @@
       "source": "file:///opt/otp-data/transit/netex-delfi.zip",
       "ignoreFilePattern": ".*\\.pdf",
       "groupFilePattern": "([^/]+)/.*\\.xml"
+    },
+    {
+      "type": "netex",
+      "source": "file:///opt/otp-data/transit/napcore_netex_de_flix-patched.zip",
+      "feedId": "Netex-de-flix",
+      "sharedFilePattern": "_(?:shared_data|stops)\\.xml",
+      "groupFilePattern": "(line)_\\d+\\.xml"
     }
   ]
 }

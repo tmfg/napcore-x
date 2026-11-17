@@ -1,0 +1,28 @@
+{
+  "extracts": [
+    {
+      "output": "local-test/input/osm/Berlin-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [13.287165,52.468594,13.383428,52.528224]
+    },
+    {
+      "output": "local-test/input/osm/Halle-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [11.9781517602,51.473899865,11.9945754284,51.4808279436]
+    },
+    {
+      "output": "local-test/input/osm/Stuttgart-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [9.175787,48.780942,9.189863,48.789199]
+    },
+    {
+      "output": "local-test/input/osm/Frankfurt-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [8.640407,50.087382,8.726229,50.117824]
+    },
+    {
+      "output": "local-test/input/osm/Travemunde-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [10.110924,53.652606,10.945885,54.02293]
+    },
+    {
+      "output": "local-test/input/osm/Dortmund-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [6.5863,51.1497,7.5743,51.6144]
+    }
+  ]
+}

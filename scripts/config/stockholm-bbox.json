@@ -1,0 +1,8 @@
+{
+  "extracts": [
+    {
+      "output": "local-test/input/osm/stockholm-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [17.679989,59.197248,18.465511,59.498305]
+    }
+  ]
+}

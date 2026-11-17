@@ -1,0 +1,20 @@
+{
+  "extracts": [
+    {
+      "output": "local-test/input/osm/helsinki-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [24.4429,60.1126,25.2613,60.3828]
+    },
+    {
+      "output": "local-test/input/osm/Oulu-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [25.452547,64.990904,25.502809,65.023629]
+    },
+    {
+      "output": "local-test/input/osm/TKU-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [22.211108,60.421149,22.315787,60.47171]
+    },
+    {
+      "output": "local-test/input/osm/TRE-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [23.761145,61.490213,23.785247,61.50368]
+    }
+  ]
+}
