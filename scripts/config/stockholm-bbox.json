@@ -3,6 +3,10 @@
     {
       "output": "local-test/input/osm/stockholm-cropped-$(date +%Y-%m-%d).osm.pbf",
       "bbox": [17.679989,59.197248,18.465511,59.498305]
+    },
+    {
+      "output": "local-test/input/osm/haaparanta-cropped-$(date +%Y-%m-%d).osm.pbf",
+      "bbox": [24.072182,65.81333,24.152107,65.863837]
     }
   ]
 }

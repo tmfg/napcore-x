@@ -84,7 +84,7 @@
       "RAIL" : 0.85
     },
     "accessEgress" : {
-      "maxDuration" : "75m",
+      "maxDuration" : "180m",
       "maxDurationForMode" : {
         "BIKE_RENTAL" : "20m"
       },
