@@ -6,7 +6,7 @@ Please do not report security vulnerabilities through public GitHub issues.
 
 Report vulnerabilities privately to:
 
-security@yourorganization.example
+nap@fintraffic.fi
 
 Include:
 

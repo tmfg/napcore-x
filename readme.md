@@ -12,7 +12,7 @@ This project is maintained by Fintraffic / Traffic Management Company Finland Lt
 
 Primary contact:
 
-napcore@fintraffic.fi
+nap@fintraffic.fi
 
 Repository maintainers:
 
