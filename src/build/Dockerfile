@@ -4,7 +4,8 @@ FROM ${OTP_BASE_IMAGE}
 
 WORKDIR /var/opentripplanner
 
-ENV JAVA_OPTS="-Xmx10G"
+# Fix for CVE-2026-114938: -XX:UseAVX=2
+ENV JAVA_OPTS="-Xmx10G -XX:UseAVX=2"
 
 
 # jq needed for parsing build-config.json, unzip and zip needed for removing duplicates from data
